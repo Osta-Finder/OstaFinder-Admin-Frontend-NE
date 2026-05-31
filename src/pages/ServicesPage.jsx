@@ -88,6 +88,46 @@ export default function ServicesPage() {
     setSelectedService(null);
   };
 
+  const handleEditClick = () => {
+    setEditService({
+      name: selectedService.name,
+      description: selectedService.description,
+      price: selectedService.price,
+      icon: selectedService.icon,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editService.name || !editService.description || !editService.price) {
+      toast.error('يرجى ملء جميع الحقول');
+      return;
+    }
+
+    setServices(services.map(service =>
+      service.id === selectedService.id
+        ? {
+            ...service,
+            name: editService.name,
+            description: editService.description,
+            price: editService.price,
+            icon: editService.icon,
+          }
+        : service
+    ));
+
+    setSelectedService({
+      ...selectedService,
+      name: editService.name,
+      description: editService.description,
+      price: editService.price,
+      icon: editService.icon,
+    });
+
+    setShowEditModal(false);
+    toast.success('تم تحديث الخدمة بنجاح');
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-2">
@@ -212,6 +252,7 @@ export default function ServicesPage() {
                   إغلاق
                 </button>
                 <button 
+                  onClick={handleEditClick}
                   className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
                 >
                   تعديل الخدمة
@@ -308,6 +349,99 @@ export default function ServicesPage() {
                   className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
                 >
                   إضافة
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">تعديل الخدمة</h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  اسم الخدمة
+                </label>
+                <input
+                  type="text"
+                  value={editService.name}
+                  onChange={(e) => setEditService({ ...editService, name: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-4 text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  placeholder="أدخل اسم الخدمة"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  الوصف
+                </label>
+                <textarea
+                  value={editService.description}
+                  onChange={(e) => setEditService({ ...editService, description: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-4 text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50 resize-none"
+                  placeholder="أدخل وصف الخدمة"
+                  rows="3"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  السعر
+                </label>
+                <input
+                  type="text"
+                  value={editService.price}
+                  onChange={(e) => setEditService({ ...editService, price: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-4 text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  placeholder="مثال: 150 ر.س"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  الأيقونة
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {['🔧', '⚡', '🪵', '🛠️', '🔨', '🪛', '🧰', '⚙️'].map((icon) => (
+                    <button
+                      key={icon}
+                      onClick={() => setEditService({ ...editService, icon })}
+                      className={`text-2xl p-2 rounded-lg transition-all ${
+                        editService.icon === icon
+                          ? 'bg-orange-500 scale-110'
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold rounded-lg transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button 
+                  onClick={handleSaveEdit}
+                  className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  حفظ التعديلات
                 </button>
               </div>
             </div>
