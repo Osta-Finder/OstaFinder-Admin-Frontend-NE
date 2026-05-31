@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BellIcon, Cog6ToothIcon, MagnifyingGlassIcon, ArrowRightOnRectangleIcon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
@@ -8,11 +8,19 @@ const Header = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [user, setUser] = useState(null);
   const [notifications, setNotifications] = useState([
     { id: 1, message: 'طلب جديد من أحمد محمود', time: 'منذ 5 دقائق', read: false },
     { id: 2, message: 'تم إكمال الصيانة للعميل سارة', time: 'منذ ساعة', read: false },
     { id: 3, message: 'تقييم جديد: 5 نجوم من كريم حسن', time: 'منذ ساعتين', read: true },
   ]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const handleSettings = () => {
     navigate('/settings');
@@ -20,11 +28,14 @@ const Header = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('isLoggedIn');
     toast.success('تم تسجيل الخروج بنجاح');
     setShowMenu(false);
+    setShowProfile(false);
     setTimeout(() => {
-      navigate('/');
-    }, 1000);
+      navigate('/login');
+    }, 500);
   };
 
   const handleProfileClick = () => {
@@ -169,25 +180,37 @@ const Header = () => {
               onClick={handleProfileClick}
               className="w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-sm hover:shadow-md transition-shadow"
             >
-              <img 
-                src="https://i.pravatar.cc/150?u=a042581f4e29026704d" 
-                alt="Admin Profile" 
-                className="w-full h-full object-cover"
-              />
+              {user && user.avatar ? (
+                <img 
+                  src={user.avatar} 
+                  alt={user.name} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-[#D97706] flex items-center justify-center text-white font-bold">
+                  {user?.name?.charAt(0)}
+                </div>
+              )}
             </button>
 
-            {showProfile && (
+            {showProfile && user && (
               <div className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                 <div className="p-4 border-b border-gray-200">
                   <div className="flex items-center gap-3">
-                    <img 
-                      src="https://i.pravatar.cc/150?u=a042581f4e29026704d" 
-                      alt="Admin Profile" 
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
+                    {user.avatar ? (
+                      <img 
+                        src={user.avatar} 
+                        alt={user.name} 
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-[#D97706] flex items-center justify-center text-white font-bold text-lg">
+                        {user.name?.charAt(0)}
+                      </div>
+                    )}
                     <div className="text-right">
-                      <p className="font-bold text-gray-900">أحمد محمود</p>
-                      <p className="text-xs text-gray-500">مدير النظام</p>
+                      <p className="font-bold text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500">{user.role === 'admin' ? 'مدير النظام' : 'مستخدم'}</p>
                     </div>
                   </div>
                 </div>

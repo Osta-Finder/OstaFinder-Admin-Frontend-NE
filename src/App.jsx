@@ -14,13 +14,35 @@ import ReportsPage from './pages/ReportsPage';
 import CustomersPage from './pages/CustomersPage';
 import ServicesPage from './pages/ServicesPage';
 import SettingsPage from './pages/SettingsPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+
+const ProtectedRoute = ({ children }) => {
+  const isLoggedIn = localStorage.getItem('isLoggedIn');
+  
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
 
 function App() {
   return (
     <div dir="rtl">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<MainLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <MainLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="orders" element={<OrdersPage />} />
