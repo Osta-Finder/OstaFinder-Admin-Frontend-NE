@@ -1,4 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const services = [
   {
@@ -32,7 +34,13 @@ const services = [
 ];
 
 export default function ServicePopularity() {
+  const navigate = useNavigate();
   const totalPercentage = services.reduce((sum, s) => sum + s.percentage, 0);
+
+  const handleViewDetails = () => {
+    toast.success('تم الانتقال لصفحة الخدمات');
+    navigate('/services');
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 lg:p-8 transition-all duration-300 hover:shadow-lg h-full">
@@ -83,7 +91,10 @@ export default function ServicePopularity() {
         </p>
       </div>
 
-      <button className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md text-sm">
+      <button 
+        onClick={handleViewDetails}
+        className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md text-sm"
+      >
         عرض التفاصيل
       </button>
     </div>

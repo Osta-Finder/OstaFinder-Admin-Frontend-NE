@@ -24,8 +24,10 @@ const Sidebar = () => {
   const navigate = useNavigate();
 
   const handleNewReport = () => {
-    navigate('/reports');
-    toast.success('تم الانتقال لصفحة التقارير');
+    toast.success('تم إنشاء تقرير جديد بنجاح!');
+    setTimeout(() => {
+      navigate('/reports');
+    }, 500);
   };
 
   const handleLogout = () => {
