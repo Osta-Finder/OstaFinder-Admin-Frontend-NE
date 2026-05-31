@@ -10,6 +10,10 @@ import TechnicianApprovalsPage from './pages/TechnicianApprovalsPage';
 import UsersPage from './pages/UsersPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SupportPage from './pages/SupportPage';
+import ReportsPage from './pages/ReportsPage';
+import CustomersPage from './pages/CustomersPage';
+import ServicesPage from './pages/ServicesPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
@@ -24,6 +28,10 @@ function App() {
             <Route path="users" element={<UsersPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="support" element={<SupportPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="customers" element={<CustomersPage />} />
+            <Route path="services" element={<ServicesPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

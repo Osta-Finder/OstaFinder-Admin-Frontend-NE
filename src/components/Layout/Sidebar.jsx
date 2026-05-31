@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { 
   Squares2X2Icon, 
@@ -21,12 +21,18 @@ const navItems = [
 ];
 
 const Sidebar = () => {
+  const navigate = useNavigate();
+
   const handleNewReport = () => {
-    toast.success('تم إنشاء تقرير جديد بنجاح');
+    navigate('/reports');
+    toast.success('تم الانتقال لصفحة التقارير');
   };
 
   const handleLogout = () => {
-    toast.info('تم تسجيل الخروج');
+    toast.success('تم تسجيل الخروج بنجاح');
+    setTimeout(() => {
+      navigate('/');
+    }, 1000);
   };
 
   return (
