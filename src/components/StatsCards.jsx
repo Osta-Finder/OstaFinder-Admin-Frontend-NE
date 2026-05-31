@@ -45,7 +45,6 @@ export default function StatsCards() {
           key={stat.id}
           className={`${stat.bgColor} ${stat.borderColor} border-2 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer group`}
         >
-          {/* Header with Icon and Change */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <span className="text-3xl">{stat.icon}</span>
@@ -57,17 +56,14 @@ export default function StatsCards() {
             </div>
           </div>
 
-          {/* Label */}
           <p className="text-gray-600 text-sm font-medium mb-2 text-right">
             {stat.label}
           </p>
 
-          {/* Value */}
           <h3 className="text-3xl lg:text-4xl font-bold text-gray-900 text-right">
             {stat.value}
           </h3>
 
-          {/* Bottom Accent */}
           <div className="mt-4 h-1 w-12 bg-gradient-to-l from-transparent to-current opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
       ))}

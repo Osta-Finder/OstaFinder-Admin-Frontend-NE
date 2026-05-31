@@ -15,18 +15,15 @@ const Header = () => {
   const handleLogout = () => {
     toast.success('تم تسجيل الخروج بنجاح');
     setShowMenu(false);
-    // في تطبيق حقيقي، ستحتاج إلى مسح البيانات والتوكن
     setTimeout(() => {
       navigate('/');
     }, 1000);
   };
 
   return (
-    <header className="h-20 bg-white flex items-center justify-between px-8 shadow-sm">
+    <header className="h-20 bg-white flex items-center justify-between px-8 shadow-sm border-b border-gray-100">
       <div className="flex items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-[#A85121] leading-tight">أوستا أدمن</h2>
-        </div>
+        <h2 className="text-xl font-bold text-[#D97706] leading-tight">أوستا أدمن</h2>
       </div>
 
       <div className="flex items-center gap-6">
@@ -34,7 +31,7 @@ const Header = () => {
           <input
             type="text"
             placeholder="بحث..."
-            className="w-full bg-gray-50 border border-gray-200 rounded-full py-2 px-5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#E56E24]/50"
+            className="w-full bg-gray-50 border border-gray-200 rounded-full py-2 px-5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/50"
           />
           <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
         </div>

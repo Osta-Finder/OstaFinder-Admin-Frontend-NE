@@ -36,7 +36,6 @@ export default function ServicePopularity() {
 
   return (
     <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 lg:p-8 transition-all duration-300 hover:shadow-lg h-full">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex flex-col gap-1">
           <h2 className="text-xl lg:text-2xl font-bold text-gray-900">
@@ -47,11 +46,9 @@ export default function ServicePopularity() {
         <span className="text-2xl">📊</span>
       </div>
 
-      {/* Services List */}
       <div className="space-y-5">
         {services.map((service) => (
           <div key={service.id} className="group">
-            {/* Service Header */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <span className="text-lg">{service.icon}</span>
@@ -64,7 +61,6 @@ export default function ServicePopularity() {
               </span>
             </div>
 
-            {/* Progress Bar */}
             <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
               <div
                 className={`h-full bg-gradient-to-r ${service.color} transition-all duration-500 group-hover:shadow-lg`}
@@ -75,7 +71,6 @@ export default function ServicePopularity() {
         ))}
       </div>
 
-      {/* Total Stats */}
       <div className="mt-8 pt-6 border-t border-gray-100">
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-600">إجمالي الخدمات</span>
@@ -88,7 +83,6 @@ export default function ServicePopularity() {
         </p>
       </div>
 
-      {/* CTA Button */}
       <button className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md text-sm">
         عرض التفاصيل
       </button>
