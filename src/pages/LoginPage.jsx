@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
@@ -8,6 +8,20 @@ export default function LoginPage() {
   const [email, setEmail] = useState('ahmed@example.com');
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/users.json');
+        const data = await response.json();
+        setUsers(data.users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -51,6 +65,27 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                اختر مستخدم
+              </label>
+              <select
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setPassword('password123');
+                }}
+                className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 text-right focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-transparent"
+              >
+                <option value="">-- اختر مستخدم --</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.email}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
                 البريد الإلكتروني
@@ -106,8 +141,9 @@ export default function LoginPage() {
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <p className="text-xs text-blue-700 text-right">
               <strong>بيانات تجريبية:</strong><br />
-              البريد: ahmed@example.com<br />
-              كلمة المرور: password123
+              جميع المستخدمين متاحين<br />
+              كلمة المرور: password123<br />
+              المستخدم الافتراضي: أحمد محمود
             </p>
           </div>
         </div>

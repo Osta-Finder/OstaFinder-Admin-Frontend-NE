@@ -2,19 +2,99 @@
   "users": [
     {
       "id": 1,
-      "name": "محمد عبد الكريم",
-      "email": "mohamed@example.com",
+      "name": "أحمد محمود",
+      "email": "ahmed@example.com",
       "password": "password123",
       "role": "admin",
-      "avatar": "https://i.pravatar.cc/150?u=a042581f4e29026704d"
+      "avatar": "https://i.pravatar.cc/150?u=ahmed123"
     },
     {
       "id": 2,
+      "name": "محمد علي",
+      "email": "mohammad@example.com",
+      "password": "password123",
+      "role": "admin",
+      "avatar": "https://i.pravatar.cc/150?u=mohammad456"
+    },
+    {
+      "id": 3,
+      "name": "علي حسن",
+      "email": "ali@example.com",
+      "password": "password123",
+      "role": "admin",
+      "avatar": "https://i.pravatar.cc/150?u=ali789"
+    },
+    {
+      "id": 4,
+      "name": "عمر فاروق",
+      "email": "omar@example.com",
+      "password": "password123",
+      "role": "admin",
+      "avatar": "https://i.pravatar.cc/150?u=omar321"
+    },
+    {
+      "id": 5,
+      "name": "خالد إبراهيم",
+      "email": "khaled@example.com",
+      "password": "password123",
+      "role": "admin",
+      "avatar": "https://i.pravatar.cc/150?u=khaled654"
+    },
+    {
+      "id": 6,
       "name": "سارة أحمد",
       "email": "sara@example.com",
       "password": "password123",
       "role": "admin",
-      "avatar": "https://i.pravatar.cc/150?u=b042581f4e29026704d"
+      "avatar": "https://i.pravatar.cc/150?u=sara987"
+    },
+    {
+      "id": 7,
+      "name": "فاطمة محمد",
+      "email": "fatima@example.com",
+      "password": "password123",
+      "role": "admin",
+      "avatar": "https://i.pravatar.cc/150?u=fatima111"
+    },
+    {
+      "id": 8,
+      "name": "نور الدين",
+      "email": "noor@example.com",
+      "password": "password123",
+      "role": "admin",
+      "avatar": "https://i.pravatar.cc/150?u=noor222"
+    },
+    {
+      "id": 9,
+      "name": "حسام الدين",
+      "email": "hossam@example.com",
+      "password": "password123",
+      "role": "admin",
+      "avatar": "https://i.pravatar.cc/150?u=hossam333"
+    },
+    {
+      "id": 10,
+      "name": "ياسمين علي",
+      "email": "yasmin@example.com",
+      "password": "password123",
+      "role": "admin",
+      "avatar": "https://i.pravatar.cc/150?u=yasmin444"
+    },
+    {
+      "id": 11,
+      "name": "إبراهيم محمود",
+      "email": "ibrahim@example.com",
+      "password": "password123",
+      "role": "admin",
+      "avatar": "https://i.pravatar.cc/150?u=ibrahim555"
+    },
+    {
+      "id": 12,
+      "name": "ليلى أحمد",
+      "email": "layla@example.com",
+      "password": "password123",
+      "role": "admin",
+      "avatar": "https://i.pravatar.cc/150?u=layla666"
     }
   ]
 }
