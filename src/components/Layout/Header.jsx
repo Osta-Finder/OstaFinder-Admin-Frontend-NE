@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BellIcon, Cog6ToothIcon, MagnifyingGlassIcon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 
 const Header = () => {
   const navigate = useNavigate();
+  const headerRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -30,6 +31,19 @@ const Header = () => {
 
     window.addEventListener('userUpdated', handleUserUpdate);
     return () => window.removeEventListener('userUpdated', handleUserUpdate);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (headerRef.current && !headerRef.current.contains(event.target)) {
+        setShowMenu(false);
+        setShowNotifications(false);
+        setShowProfile(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleSettings = () => {
@@ -92,7 +106,7 @@ const Header = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <header className="h-20 bg-white flex items-center justify-between px-8 shadow-sm border-b border-gray-100">
+    <header ref={headerRef} className="h-20 bg-white flex items-center justify-between px-8 shadow-sm border-b border-gray-100">
       <div className="flex items-center gap-4">
         <h2 className="text-xl font-bold text-[#D97706] leading-tight">أوستا أدمن</h2>
       </div>
