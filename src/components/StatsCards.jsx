@@ -4,36 +4,36 @@ import { useSelector } from 'react-redux';
 const statsData = [
   {
     id: 1,
-    label: 'إجمالي العملاء',
-    value: '24,592',
-    change: '+12%',
+    label: 'إجمالي الطلبات',
+    value: '2,450',
+    change: '+18%',
     changeType: 'positive',
-    icon: '👥',
+    icon: '📦',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
     textColor: 'text-blue-600',
   },
   {
     id: 2,
-    label: 'تقييم المتعاملين',
-    value: '1,843',
-    change: '+5%',
+    label: 'الإيرادات الشهرية',
+    value: '45,000 ر.س',
+    change: '+22%',
+    changeType: 'positive',
+    icon: '💰',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-200',
+    textColor: 'text-green-600',
+  },
+  {
+    id: 3,
+    label: 'معدل الرضا',
+    value: '95%',
+    change: '+8%',
     changeType: 'positive',
     icon: '⭐',
     bgColor: 'bg-orange-50',
     borderColor: 'border-orange-200',
     textColor: 'text-orange-600',
-  },
-  {
-    id: 3,
-    label: 'إجمالي الخدمات',
-    value: '8,920',
-    change: '+24%',
-    changeType: 'positive',
-    icon: '📋',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
-    textColor: 'text-green-600',
   },
 ];
 
@@ -47,9 +47,9 @@ export default function StatsCards() {
         >
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{stat.icon}</span>
+              <span className="text-4xl">{stat.icon}</span>
               <span
-                className={`${stat.textColor} text-xs font-semibold px-3 py-1 bg-white rounded-full`}
+                className={`${stat.textColor} text-xs font-semibold px-3 py-1 bg-white rounded-full border border-current`}
               >
                 {stat.change}
               </span>

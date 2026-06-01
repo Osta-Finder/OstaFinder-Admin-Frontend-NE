@@ -3,11 +3,11 @@ import { Menu } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 const chartData = [
-  { month: 'يناير', value: 520 },
-  { month: 'فبراير', value: 540 },
-  { month: 'مارس', value: 510 },
-  { month: 'أبريل', value: 530 },
-  { month: 'مايو', value: 550 },
+  { month: 'يناير', value: 4200 },
+  { month: 'فبراير', value: 5400 },
+  { month: 'مارس', value: 5100 },
+  { month: 'أبريل', value: 6300 },
+  { month: 'مايو', value: 7200 },
 ];
 
 export default function RevenueChart() {
@@ -21,9 +21,9 @@ export default function RevenueChart() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex flex-col gap-1">
           <h2 className="text-xl lg:text-2xl font-bold text-gray-900">
-            مسار الإيرادات
+            الإيرادات الشهرية
           </h2>
-          <p className="text-sm text-gray-500">أداء الإيرادات الشهري</p>
+          <p className="text-sm text-gray-500">أداء الإيرادات خلال الأشهر الماضية</p>
         </div>
 
         <Menu as="div" className="relative">
@@ -84,15 +84,15 @@ export default function RevenueChart() {
       <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">الأعلى</p>
-          <p className="text-lg font-bold text-gray-900">$550K</p>
+          <p className="text-lg font-bold text-gray-900">7,200 ر.س</p>
         </div>
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">المتوسط</p>
-          <p className="text-lg font-bold text-gray-900">$530K</p>
+          <p className="text-lg font-bold text-gray-900">5,840 ر.س</p>
         </div>
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">الأقل</p>
-          <p className="text-lg font-bold text-gray-900">$510K</p>
+          <p className="text-lg font-bold text-gray-900">4,200 ر.س</p>
         </div>
       </div>
     </div>

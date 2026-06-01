@@ -20,6 +20,16 @@ const Header = () => {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    const handleUserUpdate = () => {
+      const updatedUser = localStorage.getItem('user');
+      if (updatedUser) {
+        setUser(JSON.parse(updatedUser));
+      }
+    };
+
+    window.addEventListener('userUpdated', handleUserUpdate);
+    return () => window.removeEventListener('userUpdated', handleUserUpdate);
   }, []);
 
   const handleSettings = () => {
@@ -45,8 +55,26 @@ const Header = () => {
   };
 
   const handleViewProfile = () => {
-    toast.info('ملف المستخدم الشخصي');
+    navigate('/profile');
     setShowProfile(false);
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const newUser = {
+          ...user,
+          avatar: event.target?.result,
+        };
+        setUser(newUser);
+        localStorage.setItem('user', JSON.stringify(newUser));
+        window.dispatchEvent(new Event('userUpdated'));
+        toast.success('تم تحديث الصورة بنجاح');
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleNotificationClick = (id) => {
@@ -224,6 +252,19 @@ const Header = () => {
                   <UserIcon className="w-5 h-5" />
                   <span>ملفي الشخصي</span>
                 </button>
+
+                <label className="w-full text-right px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3 text-gray-700 border-b border-gray-200 cursor-pointer">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>تحديث الصورة</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
+                </label>
 
                 <button
                   onClick={handleSettings}

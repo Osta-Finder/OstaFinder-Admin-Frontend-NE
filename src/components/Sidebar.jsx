@@ -40,63 +40,74 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       {/* Sidebar */}
       <aside
         className={`${
-          isOpen ? 'w-64' : 'w-20'
-        } bg-gradient-to-b from-gray-800 to-gray-900 text-white transition-all duration-300 flex flex-col shadow-lg rtl`}
+          isOpen ? 'w-72' : 'w-24'
+        } bg-black text-white transition-all duration-300 flex flex-col shadow-2xl rtl`}
         dir="rtl"
       >
         {/* Header */}
-        <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+        <div className="p-6 flex items-center justify-between">
           {isOpen && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center font-bold text-lg">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">
                 أ
               </div>
               <div className="flex flex-col">
-                <h2 className="font-bold text-lg">أوستا أمن</h2>
-                <p className="text-xs text-green-200">الإدارة الإلكترونية</p>
+                <h2 className="font-bold text-xl">أوستا</h2>
+                <p className="text-xs text-orange-400">أدمن</p>
               </div>
+            </div>
+          )}
+          {!isOpen && (
+            <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg mx-auto">
+              أ
             </div>
           )}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors duration-200"
+            className="p-2 hover:bg-gray-900 rounded-lg transition-colors duration-200"
           >
             <ChevronLeftIcon className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Divider */}
+        <div className="h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
+
         {/* Navigation Items */}
-        <nav className="flex-1 px-3 py-6 space-y-2">
+        <nav className="flex-1 px-4 py-8 space-y-4">
           {menuItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavClick(item)}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 relative group hover:bg-gray-700`}
+              className={`w-full flex flex-col items-center gap-2 px-4 py-4 rounded-2xl transition-all duration-200 group hover:bg-orange-500/10 active:bg-orange-500/20`}
             >
-              <span className="text-xl">{item.icon}</span>
+              <span className="text-4xl group-hover:scale-125 transition-transform">{item.icon}</span>
               {isOpen && (
-                <span className="font-medium text-sm">{item.label}</span>
+                <span className="font-semibold text-xs text-center group-hover:text-orange-400 transition-colors">{item.label}</span>
               )}
             </button>
           ))}
         </nav>
 
+        {/* Divider */}
+        <div className="h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
+
         {/* CTA Button */}
-        <div className="p-4 border-t border-gray-700 space-y-3">
+        <div className="p-4 space-y-3">
           <button 
             onClick={handleCreateReport}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-4 px-4 rounded-2xl transition-all duration-200 transform hover:scale-105 shadow-lg flex flex-col items-center gap-2"
           >
-            <span>+</span>
-            {isOpen && <span>إنشاء تقرير جديد</span>}
+            <span className="text-2xl">+</span>
+            {isOpen && <span className="text-xs">إنشاء تقرير</span>}
           </button>
 
           {isOpen && (
             <button 
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 text-gray-300 hover:text-white py-2 transition-colors duration-200"
+              className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-orange-400 py-3 transition-colors duration-200 text-xs font-medium"
             >
-              <span className="text-sm">تسجيل الخروج</span>
+              <span>تسجيل الخروج</span>
             </button>
           )}
         </div>

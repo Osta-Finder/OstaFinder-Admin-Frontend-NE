@@ -2,7 +2,7 @@
   "users": [
     {
       "id": 1,
-      "name": "محمد عبد الكريم ",
+      "name": "محمد عبد الكريم",
       "email": "mohamed@example.com",
       "password": "password123",
       "role": "admin",
@@ -10,10 +10,10 @@
     },
     {
       "id": 2,
-      "name": " إبراهيم",
+      "name": "سارة أحمد",
       "email": "sara@example.com",
       "password": "password123",
-      "role": "user",
+      "role": "admin",
       "avatar": "https://i.pravatar.cc/150?u=b042581f4e29026704d"
     }
   ]
