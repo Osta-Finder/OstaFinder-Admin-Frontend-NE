@@ -1,50 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { authAPI } from '../services/adminApi';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('ahmed@example.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState([]);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch('/users.json');
-        const data = await response.json();
-        setUsers(data.users);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
-    fetchUsers();
-  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await fetch('/users.json');
-      const data = await response.json();
+      console.log('Attempting login with:', { emailorPhone: email, role: 'admin' });
+      const response = await authAPI.login(email, password);
+      console.log('Login response:', response);
       
-      const user = data.users.find(u => u.email === email && u.password === password);
-      
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user));
+      if (response && response.user) {
+        // Backend uses httpOnly cookies, so we just store user data
+        localStorage.setItem('user', JSON.stringify(response.user));
         localStorage.setItem('isLoggedIn', 'true');
         toast.success('تم تسجيل الدخول بنجاح');
         setTimeout(() => {
           navigate('/dashboard');
         }, 500);
       } else {
-        toast.error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        console.error('Invalid response structure:', response);
+        toast.error('فشل تسجيل الدخول - بيانات غير صحيحة');
       }
     } catch (error) {
-      toast.error('حدث خطأ في تسجيل الدخول');
+      console.error('Login error full:', error);
+      console.error('Error response:', error?.response?.data);
+      const errorMsg = error?.response?.data?.message || error?.message || 'حدث خطأ في تسجيل الدخول';
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -65,27 +56,6 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                اختر مستخدم
-              </label>
-              <select
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setPassword('password123');
-                }}
-                className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 text-right focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-transparent"
-              >
-                <option value="">-- اختر مستخدم --</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.email}>
-                    {user.name} ({user.email})
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
                 البريد الإلكتروني
@@ -135,15 +105,6 @@ export default function LoginPage() {
               <Link to="/register" className="text-[#D97706] hover:text-[#B45309] font-bold">
                 إنشاء حساب جديد
               </Link>
-            </p>
-          </div>
-
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-xs text-blue-700 text-right">
-              <strong>بيانات تجريبية:</strong><br />
-              جميع المستخدمين متاحين<br />
-              كلمة المرور: password123<br />
-              المستخدم الافتراضي: أحمد محمود
             </p>
           </div>
         </div>

@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { UserIcon, EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { UserIcon, EnvelopeIcon, LockClosedIcon, PhoneIcon } from '@heroicons/react/24/outline';
+import { authAPI } from '../services/adminApi';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
   });
@@ -29,42 +31,50 @@ export default function RegisterPage() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+    if (formData.password.length < 8) {
+      toast.error('كلمة المرور يجب أن تكون 8 أحرف على الأقل مع أحرف كبيرة وصغيرة وأرقام ورموز');
+      return;
+    }
+
+    // Validate phone format (Egyptian format: 01XXXXXXXXX)
+    const phoneRegex = /^01[0-2,5][0-9]{8}$/;
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      toast.error('رقم الهاتف يجب أن يكون بالصيغة المصرية (مثال: 01012345678)');
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch('/users.json');
-      const data = await response.json();
-      
-      const userExists = data.users.find(u => u.email === formData.email);
-      
-      if (userExists) {
-        toast.error('هذا البريد الإلكتروني مسجل بالفعل');
-        return;
-      }
-
-      const newUser = {
-        id: data.users.length + 1,
+      const response = await authAPI.register({
         name: formData.name,
         email: formData.email,
+        phoneNumber: formData.phoneNumber,
         password: formData.password,
-        role: 'user',
-        avatar: `https://i.pravatar.cc/150?u=${formData.email}`
-      };
+        confirmPassword: formData.confirmPassword,
+        role: 'admin', // Register as admin
+      });
 
-      localStorage.setItem('user', JSON.stringify(newUser));
-      localStorage.setItem('isLoggedIn', 'true');
       toast.success('تم إنشاء الحساب بنجاح');
       
-      setTimeout(() => {
-        navigate('/dashboard');
+      // Auto-login after successful registration
+      setTimeout(async () => {
+        try {
+          const loginResponse = await authAPI.login(formData.email, formData.password);
+          if (loginResponse && loginResponse.user) {
+            localStorage.setItem('user', JSON.stringify(loginResponse.user));
+            localStorage.setItem('isLoggedIn', 'true');
+            navigate('/dashboard');
+          }
+        } catch (loginError) {
+          // If auto-login fails, redirect to login page
+          navigate('/login');
+        }
       }, 500);
     } catch (error) {
-      toast.error('حدث خطأ في إنشاء الحساب');
+      console.error('Registration error:', error);
+      const errorMsg = error.response?.data?.message || error.response?.data?.details || 'حدث خطأ في إنشاء الحساب';
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -123,6 +133,25 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                رقم الهاتف
+              </label>
+              <div className="relative">
+                <PhoneIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 pr-10 text-right focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-transparent"
+                  placeholder="01012345678"
+                  required
+                />
+              </div>
+              <p className="text-xs text-gray-500 text-right mt-1">صيغة الرقم: 01012345678</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
                 كلمة المرور
               </label>
               <div className="relative">
@@ -137,6 +166,7 @@ export default function RegisterPage() {
                   required
                 />
               </div>
+              <p className="text-xs text-gray-500 text-right mt-1">يجب أن تحتوي على: أحرف كبيرة وصغيرة وأرقام ورموز (@$!%*?&)</p>
             </div>
 
             <div>

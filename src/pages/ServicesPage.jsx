@@ -1,83 +1,60 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
+import { categoryAPI } from '../services/adminApi';
 
 export default function ServicesPage() {
-  const [services, setServices] = useState([
-    {
-      id: 1,
-      name: 'السباكة',
-      description: 'خدمات سباكة احترافية وإصلاح الأنابيب والتسريبات',
-      price: '150 ر.س',
-      users: 1250,
-      status: 'نشط',
-      icon: '🔧',
-    },
-    {
-      id: 2,
-      name: 'الكهرباء',
-      description: 'خدمات كهربائية متخصصة والتركيبات الكهربائية',
-      price: '200 ر.س',
-      users: 980,
-      status: 'نشط',
-      icon: '⚡',
-    },
-    {
-      id: 3,
-      name: 'النجارة',
-      description: 'خدمات نجارة وتصنيع الأثاث والديكور',
-      price: '180 ر.س',
-      users: 750,
-      status: 'نشط',
-      icon: '🪵',
-    },
-    {
-      id: 4,
-      name: 'الصيانة العامة',
-      description: 'خدمات صيانة عامة وإصلاح شاملة',
-      price: '120 ر.س',
-      users: 620,
-      status: 'نشط',
-      icon: '🛠️',
-    },
-  ]);
-
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [newService, setNewService] = useState({
     name: '',
-    description: '',
-    price: '',
     icon: '🔧',
   });
   const [editService, setEditService] = useState({
     name: '',
-    description: '',
-    price: '',
     icon: '🔧',
   });
 
-  const handleAddService = () => {
-    if (!newService.name || !newService.description || !newService.price) {
-      toast.error('يرجى ملء جميع الحقول');
+  // Load services on mount
+  useEffect(() => {
+    loadServices();
+  }, []);
+
+  const loadServices = async () => {
+    try {
+      setLoading(true);
+      const data = await categoryAPI.getCategories();
+      setServices(data);
+    } catch (error) {
+      console.error('Error loading services:', error);
+      toast.error('فشل تحميل الخدمات');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddService = async () => {
+    if (!newService.name) {
+      toast.error('يرجى ملء اسم الخدمة');
       return;
     }
 
-    const service = {
-      id: services.length + 1,
-      name: newService.name,
-      description: newService.description,
-      price: newService.price,
-      users: Math.floor(Math.random() * 1000) + 100,
-      status: 'نشط',
-      icon: newService.icon,
-    };
-
-    setServices([...services, service]);
-    setNewService({ name: '', description: '', price: '', icon: '🔧' });
-    setShowAddModal(false);
-    toast.success('تم إضافة الخدمة بنجاح');
+    try {
+      await categoryAPI.createCategory({
+        name: newService.name,
+        icon: newService.icon,
+      });
+      setNewService({ name: '', icon: '🔧' });
+      setShowAddModal(false);
+      toast.success('تم إضافة الخدمة بنجاح');
+      loadServices();
+    } catch (error) {
+      console.error('Error adding service:', error);
+      toast.error('فشل إضافة الخدمة');
+    }
   };
 
   const handleViewDetails = (service) => {
@@ -91,41 +68,48 @@ export default function ServicesPage() {
   const handleEditClick = () => {
     setEditService({
       name: selectedService.name,
-      description: selectedService.description,
-      price: selectedService.price,
-      icon: selectedService.icon,
+      icon: selectedService.icon || '🔧',
     });
     setShowEditModal(true);
   };
 
-  const handleSaveEdit = () => {
-    if (!editService.name || !editService.description || !editService.price) {
-      toast.error('يرجى ملء جميع الحقول');
+  const handleSaveEdit = async () => {
+    if (!editService.name) {
+      toast.error('يرجى ملء اسم الخدمة');
       return;
     }
 
-    setServices(services.map(service =>
-      service.id === selectedService.id
-        ? {
-            ...service,
-            name: editService.name,
-            description: editService.description,
-            price: editService.price,
-            icon: editService.icon,
-          }
-        : service
-    ));
+    try {
+      await categoryAPI.updateCategory(selectedService._id, {
+        name: editService.name,
+        icon: editService.icon,
+      });
+      setSelectedService({
+        ...selectedService,
+        name: editService.name,
+        icon: editService.icon,
+      });
+      setShowEditModal(false);
+      toast.success('تم تحديث الخدمة بنجاح');
+      loadServices();
+    } catch (error) {
+      console.error('Error updating service:', error);
+      toast.error('فشل تحديث الخدمة');
+    }
+  };
 
-    setSelectedService({
-      ...selectedService,
-      name: editService.name,
-      description: editService.description,
-      price: editService.price,
-      icon: editService.icon,
-    });
-
-    setShowEditModal(false);
-    toast.success('تم تحديث الخدمة بنجاح');
+  const handleDeleteService = async (serviceId) => {
+    if (confirm('هل أنت متأكد من حذف هذه الخدمة؟')) {
+      try {
+        await categoryAPI.deleteCategory(serviceId);
+        setSelectedService(null);
+        toast.success('تم حذف الخدمة بنجاح');
+        loadServices();
+      } catch (error) {
+        console.error('Error deleting service:', error);
+        toast.error('فشل حذف الخدمة');
+      }
+    }
   };
 
   return (
@@ -139,66 +123,60 @@ export default function ServicesPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-        {services.map((service) => (
-          <div
-            key={service.id}
-            className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 
-                       transition-all duration-300 hover:shadow-lg hover:scale-105"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <span className="text-4xl">{service.icon}</span>
-              </div>
-              <span
-                className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                  service.status === 'نشط'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-yellow-100 text-yellow-700'
-                }`}
+      {loading ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">جاري التحميل...</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            {services.map((service) => (
+              <div
+                key={service._id}
+                className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 
+                           transition-all duration-300 hover:shadow-lg hover:scale-105"
               >
-                {service.status}
-              </span>
-            </div>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <span className="text-4xl">{service.icon || '🔧'}</span>
+                  </div>
+                  <span
+                    className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                      service.isActive !== false
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {service.isActive !== false ? 'نشط' : 'معطل'}
+                  </span>
+                </div>
 
-            <h3 className="text-xl font-bold text-gray-900 mb-2 text-right">
-              {service.name}
-            </h3>
-            <p className="text-gray-600 text-sm mb-4 text-right">
-              {service.description}
-            </p>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 text-right">
+                  {service.name}
+                </h3>
 
-            <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-100">
-              <div className="text-center">
-                <p className="text-xs text-gray-500 mb-1">السعر</p>
-                <p className="text-lg font-bold text-orange-600">{service.price}</p>
+                <button 
+                  onClick={() => handleViewDetails(service)}
+                  className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 
+                                  text-white font-semibold rounded-lg transition-all 
+                                  duration-200 transform hover:scale-105">
+                  عرض التفاصيل
+                </button>
               </div>
-              <div className="text-center">
-                <p className="text-xs text-gray-500 mb-1">المستخدمين</p>
-                <p className="text-lg font-bold text-gray-900">{service.users}</p>
-              </div>
-            </div>
+            ))}
+          </div>
 
+          <div className="flex justify-center pt-8">
             <button 
-              onClick={() => handleViewDetails(service)}
-              className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 
-                              text-white font-semibold rounded-lg transition-all 
-                              duration-200 transform hover:scale-105">
-              عرض التفاصيل
+              onClick={() => setShowAddModal(true)}
+              className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white 
+                              font-semibold rounded-full transition-all duration-200 
+                              transform hover:scale-105 shadow-md">
+              + إضافة خدمة جديدة
             </button>
           </div>
-        ))}
-      </div>
-
-      <div className="flex justify-center pt-8">
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white 
-                          font-semibold rounded-full transition-all duration-200 
-                          transform hover:scale-105 shadow-md">
-          + إضافة خدمة جديدة
-        </button>
-      </div>
+        </>
+      )}
 
       {selectedService && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -215,32 +193,12 @@ export default function ServicesPage() {
 
             <div className="p-6 space-y-6">
               <div className="flex items-center gap-4">
-                <span className="text-5xl">{selectedService.icon}</span>
+                <span className="text-5xl">{selectedService.icon || '🔧'}</span>
                 <div>
                   <p className="text-sm text-gray-600">الحالة</p>
                   <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                    {selectedService.status}
+                    {selectedService.isActive !== false ? 'نشط' : 'معطل'}
                   </span>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">الوصف</h3>
-                <p className="text-gray-600 leading-relaxed">{selectedService.description}</p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-600 mb-1">السعر</p>
-                  <p className="text-2xl font-bold text-orange-600">{selectedService.price}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-600 mb-1">المستخدمين</p>
-                  <p className="text-2xl font-bold text-gray-900">{selectedService.users}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-600 mb-1">الحالة</p>
-                  <p className="text-lg font-bold text-green-600">نشط</p>
                 </div>
               </div>
 
@@ -250,6 +208,12 @@ export default function ServicesPage() {
                   className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold rounded-lg transition-colors"
                 >
                   إغلاق
+                </button>
+                <button 
+                  onClick={() => handleDeleteService(selectedService._id)}
+                  className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  حذف
                 </button>
                 <button 
                   onClick={handleEditClick}
@@ -287,32 +251,6 @@ export default function ServicesPage() {
                   onChange={(e) => setNewService({ ...newService, name: e.target.value })}
                   className="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-4 text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                   placeholder="أدخل اسم الخدمة"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                  الوصف
-                </label>
-                <textarea
-                  value={newService.description}
-                  onChange={(e) => setNewService({ ...newService, description: e.target.value })}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-4 text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50 resize-none"
-                  placeholder="أدخل وصف الخدمة"
-                  rows="3"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                  السعر
-                </label>
-                <input
-                  type="text"
-                  value={newService.price}
-                  onChange={(e) => setNewService({ ...newService, price: e.target.value })}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-4 text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50"
-                  placeholder="مثال: 150 ر.س"
                 />
               </div>
 
@@ -380,32 +318,6 @@ export default function ServicesPage() {
                   onChange={(e) => setEditService({ ...editService, name: e.target.value })}
                   className="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-4 text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                   placeholder="أدخل اسم الخدمة"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                  الوصف
-                </label>
-                <textarea
-                  value={editService.description}
-                  onChange={(e) => setEditService({ ...editService, description: e.target.value })}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-4 text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50 resize-none"
-                  placeholder="أدخل وصف الخدمة"
-                  rows="3"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                  السعر
-                </label>
-                <input
-                  type="text"
-                  value={editService.price}
-                  onChange={(e) => setEditService({ ...editService, price: e.target.value })}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-4 text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50"
-                  placeholder="مثال: 150 ر.س"
                 />
               </div>
 

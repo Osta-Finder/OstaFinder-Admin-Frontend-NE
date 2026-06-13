@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowDownTrayIcon, 
   ChartBarIcon, 
   FunnelIcon,
   MagnifyingGlassIcon,
-  PencilIcon,
   EyeIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
@@ -13,19 +11,55 @@ import { toast } from 'react-toastify';
 import Table from '../components/UI/Table';
 import Badge from '../components/UI/Badge';
 import Button from '../components/UI/Button';
-import { deleteOrder } from '../store/slices/ordersSlice';
+import { requestAPI } from '../services/adminApi';
 
 const OrdersPage = () => {
-  const dispatch = useDispatch();
-  const { orders } = useSelector((state) => state.orders);
-  
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('كل الفئات');
   const [statusFilter, setStatusFilter] = useState('كل الحالات');
 
-  const handleDelete = (id) => {
-    dispatch(deleteOrder(id));
-    toast.info('تم حذف الطلب');
+  // Load orders on mount
+  useEffect(() => {
+    loadOrders();
+  }, [statusFilter, categoryFilter]);
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await requestAPI.getAllRequests();
+      // Map backend data to component format
+      const formatted = data.map(request => ({
+        id: request.requestNumber || request._id,
+        customerName: request.user?.name || 'بدون اسم',
+        assignedTech: request.worker?.name || 'غير معين',
+        category: request.service || 'غير محدد',
+        status: request.status || 'معلقة',
+        date: new Date(request.date).toLocaleDateString('ar-SA'),
+        _id: request._id,
+        fullData: request,
+      }));
+      setOrders(formatted);
+    } catch (error) {
+      console.error('Error loading orders:', error);
+      toast.error('فشل تحميل الطلبات');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (orderId) => {
+    try {
+      if (confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
+        await requestAPI.cancelRequest(orderId);
+        setOrders(orders.filter(o => o._id !== orderId));
+        toast.success('تم حذف الطلب بنجاح');
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast.error('فشل حذف الطلب');
+    }
   };
 
   const filteredOrders = orders.filter((order) => {
@@ -66,7 +100,7 @@ const OrdersPage = () => {
             <EyeIcon className="w-5 h-5" />
           </button>
           <button 
-            onClick={() => handleDelete(order.id)}
+            onClick={() => handleDelete(order._id)}
             className="text-gray-400 hover:text-red-500 transition-colors" 
             title="حذف الطلب"
           >
@@ -118,9 +152,9 @@ const OrdersPage = () => {
           className="border border-gray-200 rounded-full px-4 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-[#A85121]/50 cursor-pointer shadow-sm min-w-[120px]"
         >
           <option value="كل الحالات">كل الحالات</option>
-          <option value="مكتمل">مكتمل</option>
-          <option value="قيد الانتظار">قيد الانتظار</option>
-          <option value="جاري العمل">جاري العمل</option>
+          <option value="مكتملة">مكتملة</option>
+          <option value="معلقة">معلقة</option>
+          <option value="قيد التنفيذ">قيد التنفيذ</option>
         </select>
         <div className="relative flex-1 max-w-md mr-auto">
           <input
@@ -135,7 +169,17 @@ const OrdersPage = () => {
       </div>
 
       {/* Table */}
-      <Table columns={columns} data={filteredOrders} renderRow={renderRow} />
+      {loading ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">جاري التحميل...</p>
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">لا توجد طلبات حالياً</p>
+        </div>
+      ) : (
+        <Table columns={['رقم الطلب', 'اسم العميل', 'الفني المعين', 'الفئة', 'الحالة', 'التاريخ', 'إجراءات']} data={filteredOrders} renderRow={renderRow} />
+      )}
     </div>
   );
 };
