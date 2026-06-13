@@ -48,10 +48,13 @@ const TechnicianApprovalsPage = () => {
   const loadTechnicians = async () => {
     try {
       setLoading(true);
-      const [pendingData, allWorkers] = await Promise.all([
+      const [pendingData, allWorkersRes] = await Promise.all([
         workerAPI.getPendingWorkers(),
         workerAPI.getAllWorkers({ limit: 1000 }),
       ]);
+
+      // httpClient interceptor returns response.data => { success, results, data: [...] }
+      const allWorkers = Array.isArray(allWorkersRes) ? allWorkersRes : (allWorkersRes?.data || []);
 
       // Map pending workers to component format
       const formatted = pendingData.map(worker => ({

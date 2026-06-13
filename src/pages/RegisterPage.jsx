@@ -55,22 +55,10 @@ export default function RegisterPage() {
         role: 'admin', // Register as admin
       });
 
-      toast.success('تم إنشاء الحساب بنجاح');
-      
-      // Auto-login after successful registration
-      setTimeout(async () => {
-        try {
-          const loginResponse = await authAPI.login(formData.email, formData.password);
-          if (loginResponse && loginResponse.user) {
-            localStorage.setItem('user', JSON.stringify(loginResponse.user));
-            localStorage.setItem('isLoggedIn', 'true');
-            navigate('/dashboard');
-          }
-        } catch (loginError) {
-          // If auto-login fails, redirect to login page
-          navigate('/login');
-        }
-      }, 500);
+      toast.success('تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول');
+      setTimeout(() => {
+        navigate('/login');
+      }, 1000);
     } catch (error) {
       console.error('Registration error:', error);
       const errorMsg = error.response?.data?.message || error.response?.data?.details || 'حدث خطأ في إنشاء الحساب';

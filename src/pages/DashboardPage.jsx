@@ -39,12 +39,13 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     try {
       setLoadingOrders(true);
-      const [orders, pending] = await Promise.all([
+      const [orders, pendingRes] = await Promise.all([
         requestAPI.getAllRequests(),
         workerAPI.getPendingWorkers(),
       ]);
       // أحدث 5 طلبات
       setRecentOrders(orders.slice(0, 5));
+      const pending = Array.isArray(pendingRes) ? pendingRes : (pendingRes?.data || []);
       setPendingCount(pending.length);
     } catch (err) {
       console.error(err);

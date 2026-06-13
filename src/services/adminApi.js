@@ -43,6 +43,7 @@ export const requestAPI = {
   getAllRequests: async (params = {}) => {
     const response = await httpClient.get('/requests', { params });
     // httpClient interceptor returns response.data => { success, count, data: [...] }
+    // response here = { success, count, data: [...] }, so .data is the array
     return response.data || [];
   },
 

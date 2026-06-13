@@ -17,7 +17,8 @@ const StatsCards = () => {
     try {
       setLoading(true);
       const requestStats = await requestAPI.getRequestStats();
-      const workers = await workerAPI.getAllWorkers({ limit: 1000 });
+      const workersRes = await workerAPI.getAllWorkers({ limit: 1000 });
+      const workers = Array.isArray(workersRes) ? workersRes : (workersRes?.data || []);
       
       // requestAPI.getRequestStats() returns response.data = { الكل, معلقة, ... }
       const totalRequests = requestStats?.الكل || 0;
