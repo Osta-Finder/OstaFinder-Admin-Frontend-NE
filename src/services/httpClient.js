@@ -39,8 +39,10 @@ httpClient.interceptors.response.use(
     // Handle 401 - unauthorized
     if (error.response?.status === 401 && !isAuthRoute) {
       localStorage.removeItem(TOKEN_KEY);
-      window.location.href = '/login';
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('user');
       toast.error('انتهت صلاحية جلستك. يرجى تسجيل الدخول مجدداً');
+      window.location.href = '/login';
     }
 
     // Handle 403 - forbidden

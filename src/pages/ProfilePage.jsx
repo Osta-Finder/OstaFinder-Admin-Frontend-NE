@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
+import { authAPI } from '../services/adminApi';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,17 +17,36 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      // Try backend first, fallback to localStorage
+      const data = await authAPI.getMe();
+      const userData = data?.data || data;
       setUser(userData);
       setFormData({
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
+        name: userData.name || '',
+        email: userData.email || '',
+        role: userData.role || '',
       });
+      // keep localStorage in sync
+      localStorage.setItem('user', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      // fallback to localStorage
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setFormData({ name: userData.name, email: userData.email, role: userData.role });
+      }
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
@@ -44,26 +66,30 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!formData.name || !formData.email) {
       toast.error('يرجى ملء جميع الحقول');
       return;
     }
 
-    const updatedUser = {
-      ...user,
-      name: formData.name,
-      email: formData.email,
-    };
-
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    window.dispatchEvent(new Event('userUpdated'));
-    setIsEditing(false);
-    toast.success('تم تحديث البيانات بنجاح');
+    try {
+      setSaving(true);
+      const updated = await authAPI.updateMe({ name: formData.name, email: formData.email });
+      const updatedUser = updated?.data?.user || updated?.user || { ...user, name: formData.name, email: formData.email };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      window.dispatchEvent(new Event('userUpdated'));
+      setIsEditing(false);
+      toast.success('تم تحديث البيانات بنجاح');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast.error('فشل تحديث البيانات');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (!user) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-500">جاري التحميل...</p>
@@ -208,9 +234,10 @@ export default function ProfilePage() {
                   </button>
                   <button
                     onClick={handleSaveProfile}
-                    className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
+                    disabled={saving}
+                    className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
                   >
-                    حفظ التغييرات
+                    {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
                   </button>
                 </div>
               )}

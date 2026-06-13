@@ -48,9 +48,13 @@ const TechnicianApprovalsPage = () => {
   const loadTechnicians = async () => {
     try {
       setLoading(true);
-      const data = await workerAPI.getPendingWorkers();
-      // Map backend data to component format
-      const formatted = data.map(worker => ({
+      const [pendingData, allWorkers] = await Promise.all([
+        workerAPI.getPendingWorkers(),
+        workerAPI.getAllWorkers({ limit: 1000 }),
+      ]);
+
+      // Map pending workers to component format
+      const formatted = pendingData.map(worker => ({
         id: worker._id,
         name: worker.name || 'بدون اسم',
         email: worker.email || '',
@@ -68,8 +72,26 @@ const TechnicianApprovalsPage = () => {
         createdAt: worker.createdAt,
         initials: worker.name ? worker.name.substring(0, 2).toUpperCase() : 'WK',
       }));
+
       setTechnicians(formatted);
-      setStats(prev => ({ ...prev, pending: formatted.length }));
+
+      // حساب "تم الاعتماد اليوم" من كل الـ workers
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const approvedToday = allWorkers.filter(w => {
+        if (w.approvalStatus !== 'approved' || !w.approvedAt) return false;
+        const approvedDate = new Date(w.approvedAt);
+        approvedDate.setHours(0, 0, 0, 0);
+        return approvedDate.getTime() === today.getTime();
+      }).length;
+
+      // حساب "طلبات عاجلة" — pending من أكثر من 3 أيام
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+      const urgent = pendingData.filter(w => {
+        return w.createdAt && new Date(w.createdAt) < threeDaysAgo;
+      }).length;
+
+      setStats({ pending: formatted.length, approvedToday, urgent });
     } catch (error) {
       console.error('Error loading technicians:', error);
       toast.error('فشل تحميل الفنيين');
@@ -90,7 +112,14 @@ const TechnicianApprovalsPage = () => {
       await workerAPI.updateWorkerApproval(tech.id, 'approved');
       toast.success('تم اعتماد الفني بنجاح');
       setTechnicians(prev => prev.filter(t => t.id !== tech.id));
-      setStats(prev => ({ ...prev, pending: prev.pending - 1 }));
+      setStats(prev => ({
+        ...prev,
+        pending: prev.pending - 1,
+        approvedToday: prev.approvedToday + 1,
+        urgent: tech.createdAt && new Date(tech.createdAt) < new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+          ? prev.urgent - 1
+          : prev.urgent,
+      }));
       setShowModal(false);
     } catch (error) {
       console.error('Error approving technician:', error);

@@ -84,15 +84,15 @@ export default function RevenueChart() {
       <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">الأعلى</p>
-          <p className="text-lg font-bold text-gray-900">7,200 ر.س</p>
+          <p className="text-lg font-bold text-gray-900">{Math.max(...chartData.map(d => d.value)).toLocaleString('ar-SA')} ر.س</p>
         </div>
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">المتوسط</p>
-          <p className="text-lg font-bold text-gray-900">5,840 ر.س</p>
+          <p className="text-lg font-bold text-gray-900">{Math.round(chartData.reduce((s, d) => s + d.value, 0) / chartData.length).toLocaleString('ar-SA')} ر.س</p>
         </div>
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">الأقل</p>
-          <p className="text-lg font-bold text-gray-900">4,200 ر.س</p>
+          <p className="text-lg font-bold text-gray-900">{Math.min(...chartData.map(d => d.value)).toLocaleString('ar-SA')} ر.س</p>
         </div>
       </div>
     </div>

@@ -1,65 +1,102 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
+import { requestAPI, workerAPI } from '../services/adminApi';
 
 export default function ReportsPage() {
   const [selectedReport, setSelectedReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [liveStats, setLiveStats] = useState(null);
+  const [workersCount, setWorkersCount] = useState(0);
+
+  useEffect(() => {
+    loadLiveData();
+  }, []);
+
+  const loadLiveData = async () => {
+    try {
+      setLoading(true);
+      const [stats, workers] = await Promise.all([
+        requestAPI.getRequestStats(),
+        workerAPI.getAllWorkers({ limit: 1000 }),
+      ]);
+      setLiveStats(stats);
+      setWorkersCount(workers?.length || 0);
+    } catch (error) {
+      console.error('Error loading report data:', error);
+      toast.error('فشل تحميل بيانات التقارير');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const completionRate =
+    liveStats && liveStats['الكل'] > 0
+      ? Math.round(((liveStats['مكتملة'] || 0) / liveStats['الكل']) * 100)
+      : 0;
 
   const reports = [
     {
       id: 1,
-      title: 'تقرير الأداء الشهري',
-      description: 'تقرير شامل عن أداء الخدمات خلال الشهر الحالي',
-      date: '2026-05-30',
-      status: 'مكتمل',
+      title: 'تقرير أداء الطلبات',
+      description: 'تقرير شامل عن حالة جميع الطلبات في النظام',
+      date: new Date().toLocaleDateString('ar-SA'),
+      status: loading ? 'جاري التحميل' : 'مكتمل',
       icon: '📊',
       details: {
-        content: 'تقرير شامل يغطي جميع جوانب الأداء الشهري',
-        metrics: [
-          { label: 'إجمالي الطلبات', value: '1,250' },
-          { label: 'الطلبات المكتملة', value: '1,180' },
-          { label: 'معدل الرضا', value: '95%' },
-          { label: 'متوسط الوقت', value: '2.5 ساعة' },
-        ],
-        summary: 'أداء ممتازة خلال الشهر الحالي مع تحسن ملحوظ في معدل رضا العملاء'
-      }
+        content: 'تقرير شامل يغطي جميع جوانب الأداء بناءً على البيانات الحالية',
+        metrics: loading
+          ? []
+          : [
+              { label: 'إجمالي الطلبات', value: (liveStats?.['الكل'] || 0).toLocaleString('ar-SA') },
+              { label: 'الطلبات المكتملة', value: (liveStats?.['مكتملة'] || 0).toLocaleString('ar-SA') },
+              { label: 'الطلبات المعلقة', value: (liveStats?.['معلقة'] || 0).toLocaleString('ar-SA') },
+              { label: 'معدل الإكمال', value: `${completionRate}%` },
+            ],
+        summary: `إجمالي ${liveStats?.['الكل'] || 0} طلب في النظام، منها ${liveStats?.['مكتملة'] || 0} مكتملة بمعدل إكمال ${completionRate}%`,
+      },
     },
     {
       id: 2,
-      title: 'تقرير رضا العملاء',
-      description: 'تقييم رضا العملاء والملاحظات المهمة',
-      date: '2026-05-28',
-      status: 'قيد المراجعة',
-      icon: '⭐',
+      title: 'تقرير حالة الطلبات',
+      description: 'توزيع تفصيلي لحالات الطلبات المختلفة',
+      date: new Date().toLocaleDateString('ar-SA'),
+      status: loading ? 'جاري التحميل' : 'مكتمل',
+      icon: '📋',
       details: {
-        content: 'تقييم شامل لرضا العملاء والملاحظات',
-        metrics: [
-          { label: 'عدد الاستجابات', value: '850' },
-          { label: 'متوسط التقييم', value: '4.7/5' },
-          { label: 'العملاء الراضين', value: '92%' },
-          { label: 'الملاحظات الإيجابية', value: '780' },
-        ],
-        summary: 'مستويات رضا عالية جداً مع ملاحظات إيجابية من معظم العملاء'
-      }
+        content: 'تحليل تفصيلي لتوزيع الطلبات حسب حالتها',
+        metrics: loading
+          ? []
+          : [
+              { label: 'معلقة', value: liveStats?.['معلقة'] || 0 },
+              { label: 'مقبولة', value: liveStats?.['مقبولة'] || 0 },
+              { label: 'قيد التنفيذ', value: liveStats?.['قيد التنفيذ'] || 0 },
+              { label: 'مرفوضة', value: liveStats?.['مرفوضة'] || 0 },
+              { label: 'ملغية', value: liveStats?.['ملغية'] || 0 },
+            ],
+        summary: `توزيع الطلبات: ${liveStats?.['معلقة'] || 0} معلقة، ${liveStats?.['مقبولة'] || 0} مقبولة، ${liveStats?.['مكتملة'] || 0} مكتملة`,
+      },
     },
     {
       id: 3,
-      title: 'تقرير الإيرادات',
-      description: 'تحليل تفصيلي للإيرادات والمبيعات',
-      date: '2026-05-25',
-      status: 'مكتمل',
-      icon: '💰',
+      title: 'تقرير الفنيين',
+      description: 'إحصائيات حول الفنيين المسجلين في المنصة',
+      date: new Date().toLocaleDateString('ar-SA'),
+      status: loading ? 'جاري التحميل' : 'مكتمل',
+      icon: '�',
       details: {
-        content: 'تحليل تفصيلي للإيرادات والمبيعات',
-        metrics: [
-          { label: 'إجمالي الإيرادات', value: '45,000 ر.س' },
-          { label: 'الخدمات الأكثر بيعاً', value: 'السباكة' },
-          { label: 'نسبة النمو', value: '+18%' },
-          { label: 'العملاء الجدد', value: '125' },
-        ],
-        summary: 'نمو قوي في الإيرادات مع زيادة عدد العملاء الجدد'
-      }
+        content: 'تقرير عن الفنيين المسجلين وحالة اعتمادهم',
+        metrics: loading
+          ? []
+          : [
+              { label: 'إجمالي الفنيين', value: workersCount.toLocaleString('ar-SA') },
+              { label: 'إجمالي الطلبات', value: (liveStats?.['الكل'] || 0).toLocaleString('ar-SA') },
+              { label: 'الطلبات المكتملة', value: (liveStats?.['مكتملة'] || 0).toLocaleString('ar-SA') },
+              { label: 'معدل الإكمال', value: `${completionRate}%` },
+            ],
+        summary: `${workersCount} فني مسجل في المنصة مع معدل إكمال طلبات ${completionRate}%`,
+      },
     },
   ];
 
@@ -145,51 +182,60 @@ export default function ReportsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {reports.map((report) => (
-          <div
-            key={report.id}
-            className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 
-                       transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <span className="text-3xl">{report.icon}</span>
-              <span
-                className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                  report.status === 'مكتمل'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-yellow-100 text-yellow-700'
-                }`}
-              >
-                {report.status}
-              </span>
-            </div>
+      {loading ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 animate-pulse">جاري تحميل البيانات...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {reports.map((report) => (
+            <div
+              key={report.id}
+              className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 
+                         transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-3xl">{report.icon}</span>
+                <span
+                  className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                    report.status === 'مكتمل'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}
+                >
+                  {report.status}
+                </span>
+              </div>
 
-            <h3 className="text-lg font-bold text-gray-900 mb-2 text-right">
-              {report.title}
-            </h3>
-            <p className="text-gray-600 text-sm mb-4 text-right">
-              {report.description}
-            </p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2 text-right">
+                {report.title}
+              </h3>
+              <p className="text-gray-600 text-sm mb-4 text-right">
+                {report.description}
+              </p>
 
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <span className="text-xs text-gray-500">{report.date}</span>
-              <button 
-                onClick={() => handleViewReport(report)}
-                className="text-orange-500 hover:text-orange-600 font-semibold text-sm"
-              >
-                عرض التقرير →
-              </button>
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <span className="text-xs text-gray-500">{report.date}</span>
+                <button
+                  onClick={() => handleViewReport(report)}
+                  className="text-orange-500 hover:text-orange-600 font-semibold text-sm"
+                >
+                  عرض التقرير →
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex justify-center pt-8">
-        <button className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white 
-                          font-semibold rounded-full transition-all duration-200 
-                          transform hover:scale-105 shadow-md">
-          + إنشاء تقرير جديد
+        <button
+          onClick={loadLiveData}
+          className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white 
+                    font-semibold rounded-full transition-all duration-200 
+                    transform hover:scale-105 shadow-md"
+        >
+          🔄 تحديث التقارير
         </button>
       </div>
 
@@ -235,7 +281,7 @@ export default function ReportsPage() {
                 >
                   إغلاق
                 </button>
-                <button 
+                <button
                   onClick={handleDownloadPDF}
                   className="flex-1 px-4 py-2 bg-[#D97706] hover:bg-[#B45309] text-white font-semibold rounded-lg transition-colors"
                 >

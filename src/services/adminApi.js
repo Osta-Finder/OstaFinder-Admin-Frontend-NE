@@ -42,7 +42,7 @@ export const requestAPI = {
   // Get all requests with optional filters
   getAllRequests: async (params = {}) => {
     const response = await httpClient.get('/requests', { params });
-    // backend: { success, count, data: [...] }
+    // httpClient interceptor returns response.data => { success, count, data: [...] }
     return response.data || [];
   },
 

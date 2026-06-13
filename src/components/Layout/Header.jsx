@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BellIcon, Cog6ToothIcon, MagnifyingGlassIcon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
+import { workerAPI, requestAPI } from '../../services/adminApi';
 
 const Header = () => {
   const navigate = useNavigate();
@@ -10,28 +11,71 @@ const Header = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [user, setUser] = useState(null);
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'طلب جديد من أحمد محمود', time: 'منذ 5 دقائق', read: false },
-    { id: 2, message: 'تم إكمال الصيانة للعميل سارة', time: 'منذ ساعة', read: false },
-    { id: 3, message: 'تقييم جديد: 5 نجوم من كريم حسن', time: 'منذ ساعتين', read: true },
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotifs, setLoadingNotifs] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    if (storedUser) setUser(JSON.parse(storedUser));
 
     const handleUserUpdate = () => {
       const updatedUser = localStorage.getItem('user');
-      if (updatedUser) {
-        setUser(JSON.parse(updatedUser));
-      }
+      if (updatedUser) setUser(JSON.parse(updatedUser));
     };
-
     window.addEventListener('userUpdated', handleUserUpdate);
     return () => window.removeEventListener('userUpdated', handleUserUpdate);
   }, []);
+
+  // جيب الإشعارات من الباك‌اند
+  useEffect(() => {
+    loadNotifications();
+    // بيحدث كل دقيقة
+    const interval = setInterval(loadNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      setLoadingNotifs(true);
+      const [pending, orders] = await Promise.all([
+        workerAPI.getPendingWorkers(),
+        requestAPI.getAllRequests(),
+      ]);
+
+      const notifs = [];
+
+      // إشعارات الفنيين المعلقين
+      pending.slice(0, 3).forEach((w, i) => {
+        notifs.push({
+          id: `worker-${w._id}`,
+          message: `فني جديد بانتظار الاعتماد: ${w.name || 'بدون اسم'}`,
+          time: w.createdAt ? new Date(w.createdAt).toLocaleDateString('ar-SA') : 'مؤخراً',
+          read: false,
+          type: 'worker',
+          link: '/technicians',
+        });
+      });
+
+      // إشعارات الطلبات الجديدة المعلقة
+      const pendingOrders = orders.filter(o => o.status === 'معلقة').slice(0, 3);
+      pendingOrders.forEach((o) => {
+        notifs.push({
+          id: `order-${o._id}`,
+          message: `طلب جديد معلق من: ${o.user?.name || 'عميل'}`,
+          time: o.date ? new Date(o.date).toLocaleDateString('ar-SA') : 'مؤخراً',
+          read: false,
+          type: 'order',
+          link: '/orders',
+        });
+      });
+
+      setNotifications(notifs);
+    } catch (err) {
+      console.error('Error loading notifications:', err);
+    } finally {
+      setLoadingNotifs(false);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -91,10 +135,12 @@ const Header = () => {
     }
   };
 
-  const handleNotificationClick = (id) => {
-    setNotifications(notifications.map(notif => 
-      notif.id === id ? { ...notif, read: true } : notif
-    ));
+  const handleNotificationClick = (notif) => {
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+    if (notif.link) {
+      navigate(notif.link);
+      setShowNotifications(false);
+    }
   };
 
   const handleClearNotifications = () => {
@@ -108,7 +154,7 @@ const Header = () => {
   return (
     <header ref={headerRef} className="h-20 bg-white flex items-center justify-between px-8 shadow-sm border-b border-gray-100">
       <div className="flex items-center gap-4">
-        <h2 className="text-xl font-bold text-[#D97706] leading-tight">أوستا أدمن</h2>
+        <h2 className="text-xl font-bold text-[#D97706] leading-tight">Osta Finder</h2>
       </div>
 
       <div className="flex items-center gap-6">
@@ -153,7 +199,7 @@ const Header = () => {
                       {notifications.map((notif) => (
                         <button
                           key={notif.id}
-                          onClick={() => handleNotificationClick(notif.id)}
+                          onClick={() => handleNotificationClick(notif)}
                           className={`w-full text-right px-4 py-3 hover:bg-gray-50 transition-colors ${
                             !notif.read ? 'bg-blue-50' : ''
                           }`}

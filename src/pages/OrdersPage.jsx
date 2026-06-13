@@ -31,12 +31,12 @@ const OrdersPage = () => {
       const data = await requestAPI.getAllRequests();
       // Map backend data to component format
       const formatted = data.map(request => ({
-        id: request.requestNumber || request._id,
+        id: String(request.requestNumber || request._id || ''),
         customerName: request.user?.name || 'بدون اسم',
         assignedTech: request.worker?.name || 'غير معين',
         category: request.service || 'غير محدد',
         status: request.status || 'معلقة',
-        date: new Date(request.date).toLocaleDateString('ar-SA'),
+        date: request.date ? new Date(request.date).toLocaleDateString('ar-SA') : '—',
         _id: request._id,
         fullData: request,
       }));

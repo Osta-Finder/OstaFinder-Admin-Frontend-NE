@@ -37,7 +37,7 @@ const AnalyticsPage = () => {
 
   useEffect(() => {
     loadAnalytics();
-  }, []);
+  }, [dateRange]);
 
   const loadAnalytics = async () => {
     try {
