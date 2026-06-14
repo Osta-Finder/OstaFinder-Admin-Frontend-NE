@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Table from '../components/UI/Table';
 import Badge from '../components/UI/Badge';
-import { workerAPI } from '../services/adminApi';
+import { workerAPI, categoryAPI } from '../services/adminApi';
 
 const StatCard = ({ title, value, icon: Icon, colorClass, loading }) => (
   <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 group relative overflow-hidden">
@@ -29,6 +29,7 @@ const StatCard = ({ title, value, icon: Icon, colorClass, loading }) => (
 
 const TechnicianApprovalsPage = () => {
   const [technicians, setTechnicians] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState({
     pending: 0,
     approvedToday: 0,
@@ -43,7 +44,18 @@ const TechnicianApprovalsPage = () => {
   // Load pending technicians on mount
   useEffect(() => {
     loadTechnicians();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const data = await categoryAPI.getCategories();
+      // data is already the array (interceptor returns response.data => { success, count, data: [...] })
+      setCategories(Array.isArray(data) ? data : (data?.data || []));
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
 
   const loadTechnicians = async () => {
     try {
@@ -247,20 +259,26 @@ const TechnicianApprovalsPage = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-gray-700 font-medium">
-              <AdjustmentsHorizontalIcon className="w-5 h-5" />
-              تصفية متقدمة
-            </button>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <AdjustmentsHorizontalIcon className="w-4 h-4 text-gray-400" />
+              <span className="text-sm font-semibold text-gray-600">تصفية حسب التخصص:</span>
+            </div>
 
-            <div className="flex items-center gap-2 bg-white rounded-full p-1 border border-gray-200 shadow-sm">
-              {['الكل', 'كهرباء', 'سباكة', 'نجارة'].map((cat) => (
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <button 
+                onClick={() => setActiveCategory('الكل')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${activeCategory === 'الكل' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                الكل
+              </button>
+              {categories.map((cat) => (
                 <button 
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${activeCategory === cat ? 'bg-orange-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}
+                  key={cat._id}
+                  onClick={() => setActiveCategory(cat.name)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${activeCategory === cat.name ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 >
-                  {cat}
+                  {cat.name}
                 </button>
               ))}
             </div>
