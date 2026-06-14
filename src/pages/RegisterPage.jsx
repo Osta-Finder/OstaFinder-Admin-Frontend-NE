@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { UserIcon, EnvelopeIcon, LockClosedIcon, PhoneIcon } from '@heroicons/react/24/outline';
+import { UserIcon, EnvelopeIcon, LockClosedIcon, PhoneIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { authAPI } from '../services/adminApi';
+
+const phoneRegex = /^01[0-2,5][0-9]{8}$/;
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -13,52 +16,67 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
   });
+  const [touched, setTouched] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleBlur = (e) => {
+    setTouched(prev => ({ ...prev, [e.target.name]: true }));
+  };
+
+  // inline validation errors — only shown after field is touched
+  const errors = {
+    phoneNumber:
+      touched.phoneNumber && formData.phoneNumber && !phoneRegex.test(formData.phoneNumber)
+        ? 'صيغة الرقم: 01012345678'
+        : null,
+    password:
+      touched.password && formData.password && !passwordRegex.test(formData.password)
+        ? 'يجب أن تحتوي على: أحرف كبيرة وصغيرة وأرقام ورموز (@$!%*?&)'
+        : null,
+    confirmPassword:
+      touched.confirmPassword && formData.confirmPassword && formData.confirmPassword !== formData.password
+        ? 'كلمات المرور غير متطابقة'
+        : null,
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    
+
+    // Mark all fields touched on submit
+    setTouched({ phoneNumber: true, password: true, confirmPassword: true });
+
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      toast.error('رقم الهاتف يجب أن يكون بالصيغة المصرية (مثال: 01012345678)');
+      return;
+    }
+    if (!passwordRegex.test(formData.password)) {
+      toast.error('كلمة المرور يجب أن تحتوي على أحرف كبيرة وصغيرة وأرقام ورموز');
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       toast.error('كلمات المرور غير متطابقة');
       return;
     }
 
-    if (formData.password.length < 8) {
-      toast.error('كلمة المرور يجب أن تكون 8 أحرف على الأقل مع أحرف كبيرة وصغيرة وأرقام ورموز');
-      return;
-    }
-
-    // Validate phone format (Egyptian format: 01XXXXXXXXX)
-    const phoneRegex = /^01[0-2,5][0-9]{8}$/;
-    if (!phoneRegex.test(formData.phoneNumber)) {
-      toast.error('رقم الهاتف يجب أن يكون بالصيغة المصرية (مثال: 01012345678)');
-      return;
-    }
-
     setLoading(true);
-
     try {
-      const response = await authAPI.register({
+      await authAPI.register({
         name: formData.name,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
-        role: 'admin', // Register as admin
+        role: 'admin',
       });
-
       toast.success('تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول');
-      setTimeout(() => {
-        navigate('/login');
-      }, 1000);
+      setTimeout(() => navigate('/login'), 1000);
     } catch (error) {
       console.error('Registration error:', error);
       const errorMsg = error.response?.data?.message || error.response?.data?.details || 'حدث خطأ في إنشاء الحساب';
@@ -67,6 +85,13 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
+
+  const inputClass = (fieldError) =>
+    `w-full bg-gray-50 border rounded-lg py-3 px-4 pr-10 text-right focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+      fieldError
+        ? 'border-red-400 focus:ring-red-300'
+        : 'border-gray-300 focus:ring-[#D97706]/50'
+    }`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#D97706] to-[#B45309] flex items-center justify-center p-4">
@@ -83,10 +108,9 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleRegister} className="space-y-6">
+            {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                الاسم الكامل
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">الاسم الكامل</label>
               <div className="relative">
                 <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -94,17 +118,17 @@ export default function RegisterPage() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 pr-10 text-right focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-transparent"
+                  onBlur={handleBlur}
+                  className={inputClass(null) + ' pl-4'}
                   placeholder="أدخل اسمك الكامل"
                   required
                 />
               </div>
             </div>
 
+            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                البريد الإلكتروني
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">البريد الإلكتروني</label>
               <div className="relative">
                 <EnvelopeIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -112,17 +136,17 @@ export default function RegisterPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 pr-10 text-right focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-transparent"
+                  onBlur={handleBlur}
+                  className={inputClass(null) + ' pl-4'}
                   placeholder="أدخل بريدك الإلكتروني"
                   required
                 />
               </div>
             </div>
 
+            {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                رقم الهاتف
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">رقم الهاتف</label>
               <div className="relative">
                 <PhoneIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -130,49 +154,71 @@ export default function RegisterPage() {
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleChange}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 pr-10 text-right focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-transparent"
+                  onBlur={handleBlur}
+                  className={inputClass(errors.phoneNumber) + ' pl-4'}
                   placeholder="01012345678"
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 text-right mt-1">صيغة الرقم: 01012345678</p>
+              {errors.phoneNumber && (
+                <p className="text-xs text-red-500 text-right mt-1">{errors.phoneNumber}</p>
+              )}
             </div>
 
+            {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                كلمة المرور
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">كلمة المرور</label>
               <div className="relative">
                 <LockClosedIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 pr-10 text-right focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-transparent"
+                  onBlur={handleBlur}
+                  className={inputClass(errors.password) + ' pl-10'}
                   placeholder="أدخل كلمة المرور"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                </button>
               </div>
-              <p className="text-xs text-gray-500 text-right mt-1">يجب أن تحتوي على: أحرف كبيرة وصغيرة وأرقام ورموز (@$!%*?&)</p>
+              {errors.password && (
+                <p className="text-xs text-red-500 text-right mt-1">{errors.password}</p>
+              )}
             </div>
 
+            {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                تأكيد كلمة المرور
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">تأكيد كلمة المرور</label>
               <div className="relative">
                 <LockClosedIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 pr-10 text-right focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-transparent"
+                  onBlur={handleBlur}
+                  className={inputClass(errors.confirmPassword) + ' pl-10'}
                   placeholder="أعد إدخال كلمة المرور"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showConfirmPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                </button>
               </div>
+              {errors.confirmPassword && (
+                <p className="text-xs text-red-500 text-right mt-1">{errors.confirmPassword}</p>
+              )}
             </div>
 
             <button
