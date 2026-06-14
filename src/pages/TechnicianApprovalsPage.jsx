@@ -12,16 +12,16 @@ import Badge from '../components/UI/Badge';
 import { workerAPI } from '../services/adminApi';
 
 const StatCard = ({ title, value, icon: Icon, colorClass, loading }) => (
-  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105">
-    <div className="flex items-center justify-between">
+  <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 group relative overflow-hidden">
+    <div className="flex items-center justify-between mb-2">
       <div>
-        <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-        <h3 className="text-3xl lg:text-4xl font-bold text-gray-900">
+        <p className="text-sm font-semibold text-gray-500 mb-1">{title}</p>
+        <h3 className="text-3xl lg:text-4xl font-black text-gray-900 tracking-tight">
           {loading ? '...' : value}
         </h3>
       </div>
-      <div className={`p-4 rounded-2xl ${colorClass}`}>
-        <Icon className="w-8 h-8" />
+      <div className={`p-4 rounded-2xl ${colorClass} shadow-sm border group-hover:scale-110 transition-transform duration-300`}>
+        <Icon className="w-7 h-7" />
       </div>
     </div>
   </div>
@@ -277,16 +277,16 @@ const TechnicianApprovalsPage = () => {
       )}
 
       {showModal && selectedTech && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="modal-overlay">
+          <div className="modal-content !max-w-2xl">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between rounded-t-2xl">
-              <h2 className="text-2xl font-bold text-gray-900">تفاصيل الفني</h2>
+            <div className="sticky top-0 bg-slate-50 border-b border-gray-100 p-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">تفاصيل الفني</h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50"
               >
-                <XMarkIcon className="w-6 h-6" />
+                <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
 
@@ -370,12 +370,12 @@ const TechnicianApprovalsPage = () => {
                             rel="noopener noreferrer"
                             className="text-sm text-blue-700 hover:underline flex items-center gap-1"
                           >
-                            <span className="text-green-600">✓</span>
+                            <CheckCircleIcon className="w-4 h-4 text-green-600" />
                             وثيقة {i + 1} — عرض
                           </a>
                         ) : (
-                          <span className="text-sm text-blue-800">
-                            <span className="text-green-600 ml-1">✓</span>
+                          <span className="text-sm text-blue-800 flex items-center gap-1">
+                            <CheckCircleIcon className="w-4 h-4 text-green-600" />
                             {cert}
                           </span>
                         )}
@@ -389,24 +389,24 @@ const TechnicianApprovalsPage = () => {
 
               {/* Actions */}
               {selectedTech.status !== 'معتمد' && selectedTech.status !== 'محظور' && (
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-4 border-t border-gray-100 mt-6">
                   <button
                     onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold rounded-lg transition-colors"
+                    className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold rounded-xl transition-colors text-sm"
                   >
                     إغلاق
                   </button>
                   <button
                     onClick={() => handleBlock(selectedTech)}
                     disabled={approving}
-                    className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+                    className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
                   >
                     {approving ? 'جاري...' : 'حظر'}
                   </button>
                   <button
                     onClick={() => handleApprove(selectedTech)}
                     disabled={approving}
-                    className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+                    className="flex-1 px-4 py-2.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm shadow-sm"
                   >
                     {approving ? 'جاري...' : 'اعتماد'}
                   </button>

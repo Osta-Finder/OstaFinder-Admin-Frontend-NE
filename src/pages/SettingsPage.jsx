@@ -1,15 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+
+const DEFAULT_SETTINGS = {
+  companyName: 'أوستا أمن',
+  email: 'info@ousta-amn.com',
+  phone: '+966501234567',
+  address: 'الرياض، المملكة العربية السعودية',
+  notifications: true,
+  darkMode: false,
+  language: 'ar',
+};
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState({
-    companyName: 'أوستا أمن',
-    email: 'info@ousta-amn.com',
-    phone: '+966501234567',
-    address: 'الرياض، المملكة العربية السعودية',
-    notifications: true,
-    darkMode: false,
-    language: 'ar',
-  });
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('adminSettings');
+    if (saved) {
+      try {
+        setSettings(JSON.parse(saved));
+      } catch (e) {
+        console.error('Error parsing settings:', e);
+      }
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -20,7 +34,8 @@ export default function SettingsPage() {
   };
 
   const handleSave = () => {
-    alert('تم حفظ الإعدادات بنجاح!');
+    localStorage.setItem('adminSettings', JSON.stringify(settings));
+    toast.success('تم حفظ الإعدادات بنجاح!');
   };
 
   return (
@@ -53,9 +68,7 @@ export default function SettingsPage() {
                 name="companyName"
                 value={settings.companyName}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                          focus:outline-none focus:ring-2 focus:ring-orange-500 
-                          focus:border-transparent transition-all duration-200 text-right"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all duration-200 text-right shadow-sm"
               />
             </div>
 
@@ -68,9 +81,7 @@ export default function SettingsPage() {
                 name="email"
                 value={settings.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                          focus:outline-none focus:ring-2 focus:ring-orange-500 
-                          focus:border-transparent transition-all duration-200 text-right"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all duration-200 text-right shadow-sm"
               />
             </div>
 
@@ -83,9 +94,7 @@ export default function SettingsPage() {
                 name="phone"
                 value={settings.phone}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                          focus:outline-none focus:ring-2 focus:ring-orange-500 
-                          focus:border-transparent transition-all duration-200 text-right"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all duration-200 text-right shadow-sm"
               />
             </div>
 
@@ -98,9 +107,7 @@ export default function SettingsPage() {
                 value={settings.address}
                 onChange={handleChange}
                 rows="3"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                          focus:outline-none focus:ring-2 focus:ring-orange-500 
-                          focus:border-transparent transition-all duration-200 text-right"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all duration-200 text-right shadow-sm"
               />
             </div>
           </div>
@@ -152,9 +159,7 @@ export default function SettingsPage() {
                 name="language"
                 value={settings.language}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                          focus:outline-none focus:ring-2 focus:ring-orange-500 
-                          focus:border-transparent transition-all duration-200 text-right"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all duration-200 text-right shadow-sm appearance-none"
               >
                 <option value="ar">العربية</option>
                 <option value="en">English</option>
@@ -178,16 +183,12 @@ export default function SettingsPage() {
 
       {/* Save Button */}
       <div className="flex justify-end gap-4">
-        <button className="px-6 py-2 border border-gray-300 text-gray-700 
-                          font-semibold rounded-lg hover:bg-gray-50 
-                          transition-all duration-200">
+        <button className="px-6 py-2.5 border border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-all duration-200">
           إلغاء
         </button>
         <button
           onClick={handleSave}
-          className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white 
-                    font-semibold rounded-lg transition-all duration-200 
-                    transform hover:scale-105"
+          className="btn-primary px-8 py-2.5 rounded-xl text-sm"
         >
           حفظ التغييرات
         </button>

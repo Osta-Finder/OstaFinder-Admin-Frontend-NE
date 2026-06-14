@@ -1,7 +1,46 @@
 import { useState, useEffect } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { 
+  XMarkIcon,
+  WrenchIcon,
+  BoltIcon,
+  BeakerIcon,
+  WrenchScrewdriverIcon,
+  PaintBrushIcon,
+  ScissorsIcon,
+  TruckIcon,
+  Cog6ToothIcon
+} from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import { categoryAPI } from '../services/adminApi';
+
+const ICON_MAP = {
+  'WrenchIcon': WrenchIcon,
+  'BoltIcon': BoltIcon,
+  'BeakerIcon': BeakerIcon,
+  'WrenchScrewdriverIcon': WrenchScrewdriverIcon,
+  'PaintBrushIcon': PaintBrushIcon,
+  'ScissorsIcon': ScissorsIcon,
+  'TruckIcon': TruckIcon,
+  'Cog6ToothIcon': Cog6ToothIcon,
+};
+const ICON_NAMES = Object.keys(ICON_MAP);
+
+const EMOJI_MAP = {
+  '🔧': 'WrenchIcon',
+  '⚡': 'BoltIcon',
+  '🪵': 'BeakerIcon',
+  '🛠️': 'WrenchScrewdriverIcon',
+  '🔨': 'PaintBrushIcon',
+  '🪛': 'ScissorsIcon',
+  '🧰': 'TruckIcon',
+  '⚙️': 'Cog6ToothIcon',
+};
+
+const renderIcon = (iconStr, className = "w-8 h-8") => {
+  const mappedName = EMOJI_MAP[iconStr] || iconStr;
+  const IconComponent = ICON_MAP[mappedName] || WrenchIcon;
+  return <IconComponent className={className} />;
+};
 
 export default function ServicesPage() {
   const [services, setServices] = useState([]);
@@ -11,11 +50,11 @@ export default function ServicesPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [newService, setNewService] = useState({
     name: '',
-    icon: '🔧',
+    icon: 'WrenchIcon',
   });
   const [editService, setEditService] = useState({
     name: '',
-    icon: '🔧',
+    icon: 'WrenchIcon',
   });
 
   // Load services on mount
@@ -47,7 +86,7 @@ export default function ServicesPage() {
         name: newService.name,
         icon: newService.icon,
       });
-      setNewService({ name: '', icon: '🔧' });
+      setNewService({ name: '', icon: 'WrenchIcon' });
       setShowAddModal(false);
       toast.success('تم إضافة الخدمة بنجاح');
       loadServices();
@@ -68,7 +107,7 @@ export default function ServicesPage() {
   const handleEditClick = () => {
     setEditService({
       name: selectedService.name,
-      icon: selectedService.icon || '🔧',
+      icon: selectedService.icon || 'WrenchIcon',
     });
     setShowEditModal(true);
   };
@@ -133,12 +172,11 @@ export default function ServicesPage() {
             {services.map((service) => (
               <div
                 key={service._id}
-                className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 
-                           transition-all duration-300 hover:shadow-lg hover:scale-105"
+                className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] border border-gray-100 p-6 transition-all duration-300 hover:-translate-y-1"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <span className="text-4xl">{service.icon || '🔧'}</span>
+                    <span className="flex items-center justify-center text-orange-500">{renderIcon(service.icon, "w-10 h-10")}</span>
                   </div>
                   <span
                     className={`text-xs font-semibold px-3 py-1 rounded-full ${
@@ -157,9 +195,7 @@ export default function ServicesPage() {
 
                 <button 
                   onClick={() => handleViewDetails(service)}
-                  className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 
-                                  text-white font-semibold rounded-lg transition-all 
-                                  duration-200 transform hover:scale-105">
+                  className="w-full px-4 py-2.5 bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white font-bold rounded-xl transition-all duration-200">
                   عرض التفاصيل
                 </button>
               </div>
@@ -169,10 +205,8 @@ export default function ServicesPage() {
           <div className="flex justify-center pt-8">
             <button 
               onClick={() => setShowAddModal(true)}
-              className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white 
-                              font-semibold rounded-full transition-all duration-200 
-                              transform hover:scale-105 shadow-md">
-              + إضافة خدمة جديدة
+              className="btn-primary px-8 py-3 rounded-full flex items-center justify-center gap-2">
+              <span>إضافة خدمة جديدة</span>
             </button>
           </div>
         </>
@@ -193,7 +227,7 @@ export default function ServicesPage() {
 
             <div className="p-6 space-y-6">
               <div className="flex items-center gap-4">
-                <span className="text-5xl">{selectedService.icon || '🔧'}</span>
+                <span className="flex items-center justify-center text-orange-500">{renderIcon(selectedService.icon, "w-12 h-12")}</span>
                 <div>
                   <p className="text-sm text-gray-600">الحالة</p>
                   <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
@@ -259,17 +293,17 @@ export default function ServicesPage() {
                   الأيقونة
                 </label>
                 <div className="grid grid-cols-4 gap-2">
-                  {['🔧', '⚡', '🪵', '🛠️', '🔨', '🪛', '🧰', '⚙️'].map((icon) => (
+                  {ICON_NAMES.map((icon) => (
                     <button
                       key={icon}
                       onClick={() => setNewService({ ...newService, icon })}
-                      className={`text-2xl p-2 rounded-lg transition-all ${
+                      className={`p-3 rounded-xl flex items-center justify-center transition-all ${
                         newService.icon === icon
-                          ? 'bg-orange-500 scale-110'
-                          : 'bg-gray-100 hover:bg-gray-200'
+                          ? 'bg-orange-500 text-white scale-110 shadow-md'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }`}
                     >
-                      {icon}
+                      {renderIcon(icon, "w-6 h-6")}
                     </button>
                   ))}
                 </div>
@@ -326,17 +360,17 @@ export default function ServicesPage() {
                   الأيقونة
                 </label>
                 <div className="grid grid-cols-4 gap-2">
-                  {['🔧', '⚡', '🪵', '🛠️', '🔨', '🪛', '🧰', '⚙️'].map((icon) => (
+                  {ICON_NAMES.map((icon) => (
                     <button
                       key={icon}
                       onClick={() => setEditService({ ...editService, icon })}
-                      className={`text-2xl p-2 rounded-lg transition-all ${
+                      className={`p-3 rounded-xl flex items-center justify-center transition-all ${
                         editService.icon === icon
-                          ? 'bg-orange-500 scale-110'
-                          : 'bg-gray-100 hover:bg-gray-200'
+                          ? 'bg-orange-500 text-white scale-110 shadow-md'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }`}
                     >
-                      {icon}
+                      {renderIcon(icon, "w-6 h-6")}
                     </button>
                   ))}
                 </div>

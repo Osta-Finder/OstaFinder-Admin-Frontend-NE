@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +6,21 @@
 
 @layer base {
   body {
-    font-family: 'Almarai', sans-serif;
-    background-color: #f8f9fa;
-    color: #1a1a1a;
+    font-family: 'Cairo', sans-serif;
+    background-color: #F8FAFC;
+    color: #0F172A;
+  }
+}
+
+@layer utilities {
+  .modal-overlay {
+    @apply fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300;
+  }
+  .modal-content {
+    @apply bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-slide-up;
+  }
+  .btn-primary {
+    @apply bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all duration-300 font-bold transform hover:-translate-y-0.5;
   }
 }
 

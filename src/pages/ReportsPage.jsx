@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { 
+  XMarkIcon,
+  ChartBarIcon,
+  ClipboardDocumentListIcon,
+  UserGroupIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/outline';
 import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
 import { requestAPI, workerAPI } from '../services/adminApi';
@@ -43,7 +49,7 @@ export default function ReportsPage() {
       description: 'تقرير شامل عن حالة جميع الطلبات في النظام',
       date: new Date().toLocaleDateString('ar-SA'),
       status: loading ? 'جاري التحميل' : 'مكتمل',
-      icon: '📊',
+      icon: <ChartBarIcon className="w-8 h-8 text-orange-500" />,
       details: {
         content: 'تقرير شامل يغطي جميع جوانب الأداء بناءً على البيانات الحالية',
         metrics: loading
@@ -63,7 +69,7 @@ export default function ReportsPage() {
       description: 'توزيع تفصيلي لحالات الطلبات المختلفة',
       date: new Date().toLocaleDateString('ar-SA'),
       status: loading ? 'جاري التحميل' : 'مكتمل',
-      icon: '📋',
+      icon: <ClipboardDocumentListIcon className="w-8 h-8 text-orange-500" />,
       details: {
         content: 'تحليل تفصيلي لتوزيع الطلبات حسب حالتها',
         metrics: loading
@@ -84,7 +90,7 @@ export default function ReportsPage() {
       description: 'إحصائيات حول الفنيين المسجلين في المنصة',
       date: new Date().toLocaleDateString('ar-SA'),
       status: loading ? 'جاري التحميل' : 'مكتمل',
-      icon: '�',
+      icon: <UserGroupIcon className="w-8 h-8 text-orange-500" />,
       details: {
         content: 'تقرير عن الفنيين المسجلين وحالة اعتمادهم',
         metrics: loading
@@ -195,7 +201,7 @@ export default function ReportsPage() {
                          transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer"
             >
               <div className="flex items-start justify-between mb-4">
-                <span className="text-3xl">{report.icon}</span>
+                <div className="flex items-center justify-center">{report.icon}</div>
                 <span
                   className={`text-xs font-semibold px-3 py-1 rounded-full ${
                     report.status === 'مكتمل'
@@ -231,11 +237,11 @@ export default function ReportsPage() {
       <div className="flex justify-center pt-8">
         <button
           onClick={loadLiveData}
-          className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white 
+          className="flex items-center justify-center gap-2 px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white 
                     font-semibold rounded-full transition-all duration-200 
                     transform hover:scale-105 shadow-md"
         >
-          🔄 تحديث التقارير
+          <ArrowPathIcon className="w-5 h-5" /> تحديث التقارير
         </button>
       </div>
 

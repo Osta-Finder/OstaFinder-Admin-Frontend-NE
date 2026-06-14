@@ -3,14 +3,20 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { 
+  ArrowDownTrayIcon,
+  ArchiveBoxIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  XCircleIcon
+} from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import html2pdf from 'html2pdf.js';
 import { requestAPI, workerAPI } from '../services/adminApi';
 
 const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899'];
 
-const StatBox = ({ label, value, change, icon, loading }) => (
+const StatBox = ({ label, value, change, icon: Icon, loading }) => (
   <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-all">
     <div className="flex items-center justify-between">
       <div>
@@ -24,7 +30,9 @@ const StatBox = ({ label, value, change, icon, loading }) => (
         </h3>
         <p className="text-xs text-green-600 mt-1">{change}</p>
       </div>
-      <div className="text-4xl">{icon}</div>
+      <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center border border-orange-100 shadow-sm">
+        <Icon className="w-7 h-7" />
+      </div>
     </div>
   </div>
 );
@@ -171,10 +179,10 @@ const AnalyticsPage = () => {
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatBox label="إجمالي الطلبات"  value={stats?.['الكل']   ?? 0} change={`${stats?.['مكتملة'] ?? 0} مكتملة`} icon="📦" loading={loading} />
-        <StatBox label="الطلبات المعلقة" value={stats?.['معلقة']  ?? 0} change="قيد الانتظار"  icon="⏳" loading={loading} />
-        <StatBox label="معدل الإكمال"    value={`${completionRate}%`}   change="من الإجمالي"   icon="✅" loading={loading} />
-        <StatBox label="الطلبات الملغية" value={stats?.['ملغية']  ?? 0} change="تم إلغاؤها"   icon="❌" loading={loading} />
+        <StatBox label="إجمالي الطلبات"  value={stats?.['الكل']   ?? 0} change={`${stats?.['مكتملة'] ?? 0} مكتملة`} icon={ArchiveBoxIcon} loading={loading} />
+        <StatBox label="الطلبات المعلقة" value={stats?.['معلقة']  ?? 0} change="قيد الانتظار"  icon={ClockIcon} loading={loading} />
+        <StatBox label="معدل الإكمال"    value={`${completionRate}%`}   change="من الإجمالي"   icon={CheckCircleIcon} loading={loading} />
+        <StatBox label="الطلبات الملغية" value={stats?.['ملغية']  ?? 0} change="تم إلغاؤها"   icon={XCircleIcon} loading={loading} />
       </div>
 
       {/* Charts */}

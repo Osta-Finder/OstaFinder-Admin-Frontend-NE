@@ -52,13 +52,13 @@ const Table = ({ columns, data, renderRow }) => {
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-[#F2DECF] overflow-hidden">
+    <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-right text-gray-700">
-          <thead className="text-xs text-gray-500 bg-[#FAFBFD] border-b border-[#F2DECF]">
+          <thead className="text-xs font-bold text-gray-500 bg-slate-50/80 border-b border-gray-100 uppercase tracking-wider">
             <tr>
               {columns.map((col, index) => (
-                <th key={index} className="px-6 py-4 font-medium text-gray-900">
+                <th key={index} className="px-6 py-4">
                   {col}
                 </th>
               ))}
@@ -68,7 +68,7 @@ const Table = ({ columns, data, renderRow }) => {
             {currentData.map((item, index) => (
               <tr 
                 key={index} 
-                className="bg-white border-b border-[#F2DECF] last:border-0 hover:bg-gray-50 transition-colors"
+                className="bg-white border-b border-gray-50 last:border-0 hover:bg-slate-50 transition-all duration-200"
               >
                 {renderRow(item)}
               </tr>
@@ -78,7 +78,7 @@ const Table = ({ columns, data, renderRow }) => {
       </div>
       
       {/* Pagination Footer */}
-      <div className="p-4 flex items-center justify-between border-t border-[#F2DECF] text-sm text-gray-500">
+      <div className="p-5 flex items-center justify-between border-t border-gray-100 text-sm text-gray-500 bg-slate-50/30">
         <div className="flex gap-2">
           <button 
             onClick={handlePrevious}

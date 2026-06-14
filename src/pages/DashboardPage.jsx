@@ -7,6 +7,7 @@ import {
   ClockIcon,
   ArrowTrendingUpIcon,
   BellAlertIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import StatsCards from '../components/StatsCards';
 import RevenueChart from '../components/RevenueChart';
@@ -26,6 +27,7 @@ const QuickAction = ({ icon: Icon, label, color, onClick }) => (
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [recentOrders, setRecentOrders] = useState([]);
+  const [allOrders, setAllOrders] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -43,6 +45,7 @@ export default function DashboardPage() {
         requestAPI.getAllRequests(),
         workerAPI.getPendingWorkers(),
       ]);
+      setAllOrders(orders);
       // أحدث 5 طلبات
       setRecentOrders(orders.slice(0, 5));
       const pending = Array.isArray(pendingRes) ? pendingRes : (pendingRes?.data || []);
@@ -69,7 +72,7 @@ export default function DashboardPage() {
       {/* ====== Welcome Banner ====== */}
       <div className="relative overflow-hidden bg-gradient-to-l from-orange-500 to-orange-600 rounded-3xl p-6 lg:p-8 text-white shadow-lg">
         <div className="relative z-10">
-          <p className="text-orange-100 text-sm font-medium mb-1">{greeting} 👋</p>
+          <p className="text-orange-100 text-sm font-medium mb-1 flex items-center gap-1">{greeting} <SparklesIcon className="w-4 h-4 text-orange-200" /></p>
           <h1 className="text-2xl lg:text-3xl font-bold mb-1">
             {user?.name || 'المدير'}
           </h1>
@@ -131,10 +134,10 @@ export default function DashboardPage() {
         <h2 className="text-xl font-semibold text-gray-800">الأداء والتحليلات</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <RevenueChart />
+            <RevenueChart orders={allOrders} loading={loadingOrders} />
           </div>
           <div className="lg:col-span-1">
-            <ServicePopularity />
+            <ServicePopularity orders={allOrders} loading={loadingOrders} />
           </div>
         </div>
       </section>

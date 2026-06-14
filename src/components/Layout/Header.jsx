@@ -13,6 +13,21 @@ const Header = () => {
   const [user, setUser] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+
+  const SEARCH_ITEMS = [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'إدارة الطلبات', path: '/orders' },
+    { label: 'اعتماد الفنيين', path: '/technicians' },
+    { label: 'إدارة المستخدمين', path: '/users' },
+    { label: 'التحليلات والإحصائيات', path: '/analytics' },
+    { label: 'إدارة الخدمات', path: '/services' },
+    { label: 'التقارير', path: '/reports' },
+    { label: 'الدعم الفني', path: '/support' },
+    { label: 'الإعدادات', path: '/settings' },
+    { label: 'الملف الشخصي', path: '/profile' }
+  ];
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -42,34 +57,44 @@ const Header = () => {
         requestAPI.getAllRequests(),
       ]);
 
+      const readIds = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+      const clearedIds = JSON.parse(localStorage.getItem('clearedNotifications') || '[]');
       const notifs = [];
 
       // إشعارات الفنيين المعلقين
-      pending.slice(0, 3).forEach((w, i) => {
-        notifs.push({
-          id: `worker-${w._id}`,
-          message: `فني جديد بانتظار الاعتماد: ${w.name || 'بدون اسم'}`,
-          time: w.createdAt ? new Date(w.createdAt).toLocaleDateString('ar-SA') : 'مؤخراً',
-          read: false,
-          type: 'worker',
-          link: '/technicians',
-        });
+      pending.forEach((w) => {
+        const id = `worker-${w._id}`;
+        if (!clearedIds.includes(id)) {
+          notifs.push({
+            id,
+            message: `فني جديد بانتظار الاعتماد: ${w.name || 'بدون اسم'}`,
+            time: w.createdAt ? new Date(w.createdAt).toLocaleDateString('ar-SA') : 'مؤخراً',
+            read: readIds.includes(id),
+            type: 'worker',
+            link: '/technicians',
+          });
+        }
       });
 
       // إشعارات الطلبات الجديدة المعلقة
-      const pendingOrders = orders.filter(o => o.status === 'معلقة').slice(0, 3);
+      const pendingOrders = orders.filter(o => o.status === 'معلقة');
       pendingOrders.forEach((o) => {
-        notifs.push({
-          id: `order-${o._id}`,
-          message: `طلب جديد معلق من: ${o.user?.name || 'عميل'}`,
-          time: o.date ? new Date(o.date).toLocaleDateString('ar-SA') : 'مؤخراً',
-          read: false,
-          type: 'order',
-          link: '/orders',
-        });
+        const id = `order-${o._id}`;
+        if (!clearedIds.includes(id)) {
+          notifs.push({
+            id,
+            message: `طلب جديد معلق من: ${o.user?.name || 'عميل'}`,
+            time: o.date ? new Date(o.date).toLocaleDateString('ar-SA') : 'مؤخراً',
+            read: readIds.includes(id),
+            type: 'order',
+            link: '/orders',
+          });
+        }
       });
 
-      setNotifications(notifs);
+      // Sort unread first, then limit to top 10
+      notifs.sort((a, b) => (a.read === b.read ? 0 : a.read ? 1 : -1));
+      setNotifications(notifs.slice(0, 10));
     } catch (err) {
       console.error('Error loading notifications:', err);
     } finally {
@@ -83,6 +108,7 @@ const Header = () => {
         setShowMenu(false);
         setShowNotifications(false);
         setShowProfile(false);
+        setSearchResults([]);
       }
     };
 
@@ -137,6 +163,10 @@ const Header = () => {
 
   const handleNotificationClick = (notif) => {
     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+    const readIds = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+    if (!readIds.includes(notif.id)) {
+      localStorage.setItem('readNotifications', JSON.stringify([...readIds, notif.id]));
+    }
     if (notif.link) {
       navigate(notif.link);
       setShowNotifications(false);
@@ -144,15 +174,38 @@ const Header = () => {
   };
 
   const handleClearNotifications = () => {
+    const allIds = notifications.map(n => n.id);
+    const clearedIds = JSON.parse(localStorage.getItem('clearedNotifications') || '[]');
+    const newClearedIds = [...new Set([...clearedIds, ...allIds])];
+    localStorage.setItem('clearedNotifications', JSON.stringify(newClearedIds));
     setNotifications([]);
     setShowNotifications(false);
     toast.info('تم حذف جميع الاشعارات');
   };
 
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (query.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+    const results = SEARCH_ITEMS.filter(item => 
+      item.label.includes(query)
+    );
+    setSearchResults(results);
+  };
+
+  const handleSearchSelect = (path) => {
+    navigate(path);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <header ref={headerRef} className="h-20 bg-white flex items-center justify-between px-8 shadow-sm border-b border-gray-100">
+    <header ref={headerRef} className="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-lg flex items-center justify-between px-8 shadow-sm border-b border-gray-100/50 transition-all duration-300">
       <div className="flex items-center gap-4">
         <h2 className="text-xl font-bold text-[#D97706] leading-tight">Osta Finder</h2>
       </div>
@@ -161,10 +214,26 @@ const Header = () => {
         <div className="relative w-96">
           <input
             type="text"
+            value={searchQuery}
+            onChange={handleSearchChange}
             placeholder="بحث..."
             className="w-full bg-gray-50 border border-gray-200 rounded-full py-2 px-5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/50"
           />
           <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          
+          {searchResults.length > 0 && (
+            <div className="absolute top-full mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+              {searchResults.map((item, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSearchSelect(item.path)}
+                  className="w-full text-right px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 text-sm text-gray-700"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         
         <div className="flex items-center gap-4">

@@ -45,11 +45,15 @@ const AddUserModal = ({ onClose, onCreated }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">إضافة مستخدم جديد</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between bg-slate-50">
+          <h2 className="text-xl font-bold text-gray-900">إضافة مستخدم جديد</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
@@ -96,16 +100,16 @@ const AddUserModal = ({ onClose, onCreated }) => {
               <option value="admin">مسؤول</option>
             </select>
           </div>
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-4">
             <button
               type="button" onClick={onClose}
-              className="flex-1 border border-gray-300 text-gray-700 rounded-xl py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+              className="flex-1 border border-gray-300 text-gray-700 rounded-xl py-2.5 text-sm font-bold hover:bg-gray-50 transition-colors"
             >
               إلغاء
             </button>
             <button
               type="submit" disabled={loading}
-              className="flex-1 bg-[#A85121] hover:bg-[#8B431B] disabled:bg-gray-400 text-white rounded-xl py-2 text-sm font-medium transition-colors"
+              className="flex-1 btn-primary py-2.5 rounded-xl text-sm disabled:opacity-50"
             >
               {loading ? 'جاري الإنشاء...' : 'إنشاء المستخدم'}
             </button>
@@ -162,7 +166,7 @@ const UsersPage = () => {
   useEffect(() => {
     const timer = setTimeout(loadUsers, searchTerm ? 400 : 0);
     return () => clearTimeout(timer);
-  }, [loadUsers, searchTerm]);
+  }, [page, searchTerm, roleFilter]);
 
   // Reset to page 1 on filter change
   useEffect(() => { setPage(1); }, [searchTerm, roleFilter]);
@@ -235,14 +239,13 @@ const UsersPage = () => {
             {loading ? 'جاري التحميل...' : `${total.toLocaleString('ar-EG')} مستخدم مسجّل`}
           </p>
         </div>
-        <Button
-          variant="primary"
-          className="bg-[#A85121] hover:bg-[#8B431B]"
+        <button
+          className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl"
           onClick={() => setShowModal(true)}
         >
           <UserPlusIcon className="w-5 h-5" />
-          إضافة مستخدم جديد
-        </Button>
+          <span>إضافة مستخدم جديد</span>
+        </button>
       </div>
 
       {/* Filters */}
@@ -255,7 +258,7 @@ const UsersPage = () => {
             placeholder="ابحث بالاسم أو البريد أو الهاتف..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full border border-gray-200 rounded-full py-2 px-4 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-[#A85121]/40 shadow-sm"
+            className="w-full border border-gray-200 rounded-full py-2.5 px-5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 shadow-sm transition-all"
           />
         </div>
 
@@ -265,7 +268,7 @@ const UsersPage = () => {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="border border-gray-200 rounded-full px-4 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-[#A85121]/40 shadow-sm cursor-pointer"
+            className="border border-gray-200 rounded-full px-5 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 shadow-sm cursor-pointer transition-all appearance-none"
           >
             <option value="">كل الأدوار</option>
             <option value="client">عملاء</option>

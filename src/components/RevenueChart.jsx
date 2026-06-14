@@ -2,19 +2,30 @@ import React, { useState } from 'react';
 import { Menu } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
-const chartData = [
-  { month: 'يناير', value: 4200 },
-  { month: 'فبراير', value: 5400 },
-  { month: 'مارس', value: 5100 },
-  { month: 'أبريل', value: 6300 },
-  { month: 'مايو', value: 7200 },
-];
-
-export default function RevenueChart() {
+export default function RevenueChart({ orders = [], loading = false }) {
   const [timeRange, setTimeRange] = useState('month');
 
-  const maxValue = Math.max(...chartData.map((d) => d.value));
-  const minValue = Math.min(...chartData.map((d) => d.value));
+  const computedData = React.useMemo(() => {
+    if (!orders || orders.length === 0) return [{ month: 'لا بيانات', value: 0 }];
+
+    const monthlyRevenue = {};
+    const monthsArabic = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+    orders.forEach(order => {
+      if (order.status === 'مكتملة' && order.date && order.amount) {
+        const d = new Date(order.date);
+        const monthName = monthsArabic[d.getMonth()];
+        monthlyRevenue[monthName] = (monthlyRevenue[monthName] || 0) + Number(order.amount);
+      }
+    });
+
+    const result = Object.entries(monthlyRevenue).map(([month, value]) => ({ month, value }));
+    if (result.length === 0) return [{ month: 'لا إيرادات', value: 0 }];
+    return result;
+  }, [orders]);
+
+  const maxValue = Math.max(...computedData.map((d) => d.value), 1);
+  const minValue = Math.min(...computedData.map((d) => d.value), 0);
 
   return (
     <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 lg:p-8 transition-all duration-300 hover:shadow-lg">
@@ -62,7 +73,9 @@ export default function RevenueChart() {
 
       <div className="bg-gradient-to-b from-orange-50 to-transparent rounded-xl p-6 mb-6">
         <div className="flex items-end justify-between gap-4 h-64">
-          {chartData.map((data, index) => {
+          {loading ? (
+            <div className="w-full flex justify-center items-center h-full text-gray-400 animate-pulse">جاري التحميل...</div>
+          ) : computedData.map((data, index) => {
             const height = ((data.value - minValue) / (maxValue - minValue)) * 100;
             return (
               <div
@@ -84,15 +97,15 @@ export default function RevenueChart() {
       <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">الأعلى</p>
-          <p className="text-lg font-bold text-gray-900">{Math.max(...chartData.map(d => d.value)).toLocaleString('ar-SA')} ر.س</p>
+          <p className="text-lg font-bold text-gray-900">{Math.max(...computedData.map(d => d.value), 0).toLocaleString('ar-SA')} ر.س</p>
         </div>
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">المتوسط</p>
-          <p className="text-lg font-bold text-gray-900">{Math.round(chartData.reduce((s, d) => s + d.value, 0) / chartData.length).toLocaleString('ar-SA')} ر.س</p>
+          <p className="text-lg font-bold text-gray-900">{computedData.length > 0 ? Math.round(computedData.reduce((s, d) => s + d.value, 0) / computedData.length).toLocaleString('ar-SA') : 0} ر.س</p>
         </div>
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">الأقل</p>
-          <p className="text-lg font-bold text-gray-900">{Math.min(...chartData.map(d => d.value)).toLocaleString('ar-SA')} ر.س</p>
+          <p className="text-lg font-bold text-gray-900">{Math.min(...computedData.map(d => d.value), 0).toLocaleString('ar-SA')} ر.س</p>
         </div>
       </div>
     </div>

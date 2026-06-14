@@ -1,15 +1,22 @@
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setActiveNav } from '../store/slices/navSlice';
-import { ChevronLeftIcon } from '@heroicons/react/24/outline';
+import { 
+  ChevronLeftIcon,
+  HomeIcon,
+  DocumentChartBarIcon,
+  UserGroupIcon,
+  WrenchScrewdriverIcon,
+  Cog6ToothIcon
+} from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 
 const menuItems = [
-  { id: 'dashboard', label: 'لوحة التحكم', icon: '📊', path: '/' },
-  { id: 'reports', label: 'التقارير', icon: '📈', path: '/reports' },
-  { id: 'customers', label: 'العملاء', icon: '👥', path: '/customers' },
-  { id: 'services', label: 'الخدمات', icon: '⚙️', path: '/services' },
-  { id: 'settings', label: 'الإعدادات', icon: '🔧', path: '/settings' },
+  { id: 'dashboard', label: 'لوحة التحكم', icon: <HomeIcon className="w-8 h-8" />, path: '/' },
+  { id: 'reports', label: 'التقارير', icon: <DocumentChartBarIcon className="w-8 h-8" />, path: '/reports' },
+  { id: 'customers', label: 'العملاء', icon: <UserGroupIcon className="w-8 h-8" />, path: '/customers' },
+  { id: 'services', label: 'الخدمات', icon: <WrenchScrewdriverIcon className="w-8 h-8" />, path: '/services' },
+  { id: 'settings', label: 'الإعدادات', icon: <Cog6ToothIcon className="w-8 h-8" />, path: '/settings' },
 ];
 
 export default function Sidebar({ isOpen, setIsOpen }) {
@@ -81,7 +88,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               onClick={() => handleNavClick(item)}
               className={`w-full flex flex-col items-center gap-2 px-4 py-4 rounded-2xl transition-all duration-200 group hover:bg-orange-500/10 active:bg-orange-500/20`}
             >
-              <span className="text-4xl group-hover:scale-125 transition-transform">{item.icon}</span>
+              <span className="flex items-center justify-center group-hover:scale-125 transition-transform text-gray-400 group-hover:text-orange-500">{item.icon}</span>
               {isOpen && (
                 <span className="font-semibold text-xs text-center group-hover:text-orange-400 transition-colors">{item.label}</span>
               )}
