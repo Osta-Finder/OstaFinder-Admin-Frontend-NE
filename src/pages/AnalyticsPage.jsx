@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend,
+  ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import { 
   ArrowDownTrayIcon,
@@ -12,7 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import html2pdf from 'html2pdf.js';
-import { requestAPI, workerAPI } from '../services/adminApi';
+import { useAdminData } from '../store/AdminDataContext';
 
 const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899'];
 
@@ -38,40 +38,22 @@ const StatBox = ({ label, value, change, icon: Icon, loading }) => (
 );
 
 const AnalyticsPage = () => {
-  const [dateRange, setDateRange] = useState('week');
-  const [stats, setStats] = useState(null);
-  const [pieData, setPieData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // ← Read from shared context — NO independent API call
+  const { requestStats: stats, loading } = useAdminData();
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [dateRange]);
-
-  const loadAnalytics = async () => {
-    try {
-      setLoading(true);
-      const statsData = await requestAPI.getRequestStats();
-
-      setStats(statsData);
-
-      // Build pie chart from real stats — exclude zero-value entries
-      const statusEntries = [
-        { name: 'مكتملة',     value: statsData['مكتملة']       || 0, color: '#10B981' },
-        { name: 'معلقة',      value: statsData['معلقة']        || 0, color: '#F59E0B' },
-        { name: 'ملغية',      value: statsData['ملغية']        || 0, color: '#EF4444' },
-        { name: 'مقبولة',     value: statsData['مقبولة']       || 0, color: '#3B82F6' },
-        { name: 'قيد التنفيذ',value: statsData['قيد التنفيذ']  || 0, color: '#8B5CF6' },
-        { name: 'مرفوضة',     value: statsData['مرفوضة']       || 0, color: '#EC4899' },
-      ].filter((e) => e.value > 0);
-
-      setPieData(statusEntries.length > 0 ? statusEntries : [{ name: 'لا توجد بيانات', value: 1, color: '#E5E7EB' }]);
-    } catch (error) {
-      console.error('Error loading analytics:', error);
-      toast.error('فشل تحميل بيانات التحليلات');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Build pie chart data from context stats (memoized to avoid re-computation)
+  const pieData = useMemo(() => {
+    if (!stats) return [{ name: 'لا توجد بيانات', value: 1, color: '#E5E7EB' }];
+    const entries = [
+      { name: 'مكتملة',      value: stats['مكتملة']       || 0, color: '#10B981' },
+      { name: 'معلقة',       value: stats['معلقة']        || 0, color: '#F59E0B' },
+      { name: 'ملغية',       value: stats['ملغية']        || 0, color: '#EF4444' },
+      { name: 'مقبولة',      value: stats['مقبولة']       || 0, color: '#3B82F6' },
+      { name: 'قيد التنفيذ', value: stats['قيد التنفيذ']  || 0, color: '#8B5CF6' },
+      { name: 'مرفوضة',      value: stats['مرفوضة']       || 0, color: '#EC4899' },
+    ].filter((e) => e.value > 0);
+    return entries.length > 0 ? entries : [{ name: 'لا توجد بيانات', value: 1, color: '#E5E7EB' }];
+  }, [stats]);
 
   // Bar chart — build from real status counts
   const barData = stats
@@ -165,16 +147,6 @@ const AnalyticsPage = () => {
           <ArrowDownTrayIcon className="w-5 h-5" />
           تحميل التقرير
         </button>
-
-        <select
-          value={dateRange}
-          onChange={(e) => setDateRange(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50"
-        >
-          <option value="week">هذا الأسبوع</option>
-          <option value="month">هذا الشهر</option>
-          <option value="year">هذا العام</option>
-        </select>
       </div>
 
       {/* Stat cards */}

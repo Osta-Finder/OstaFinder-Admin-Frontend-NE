@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ArrowDownTrayIcon, 
   ChartBarIcon, 
@@ -12,51 +12,40 @@ import Table from '../components/UI/Table';
 import Badge from '../components/UI/Badge';
 import Button from '../components/UI/Button';
 import { requestAPI } from '../services/adminApi';
+import { useAdminData } from '../store/AdminDataContext';
 
 const OrdersPage = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // ← Read orders from shared context — NO independent API call on mount/filter change
+  const { orders: rawOrders, loading, refreshAll } = useAdminData();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('كل الفئات');
   const [statusFilter, setStatusFilter] = useState('كل الحالات');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  // Load orders on mount
-  useEffect(() => {
-    loadOrders();
-  }, [statusFilter, categoryFilter]);
+  // Format raw orders from context once (memoized)
+  const orders = useMemo(() =>
+    rawOrders.map(request => ({
+      id: String(request.requestNumber || request._id || ''),
+      customerName: request.user?.name || 'بدون اسم',
+      assignedTech: request.worker?.name || 'غير معين',
+      category: request.service || 'غير محدد',
+      status: request.status || 'معلقة',
+      date: request.date ? new Date(request.date).toLocaleDateString('ar-SA') : '—',
+      _id: request._id,
+      fullData: request,
+    })),
+  [rawOrders]);
 
-  const loadOrders = async () => {
-    try {
-      setLoading(true);
-      const data = await requestAPI.getAllRequests();
-      // Map backend data to component format
-      const formatted = data.map(request => ({
-        id: String(request.requestNumber || request._id || ''),
-        customerName: request.user?.name || 'بدون اسم',
-        assignedTech: request.worker?.name || 'غير معين',
-        category: request.service || 'غير محدد',
-        status: request.status || 'معلقة',
-        date: request.date ? new Date(request.date).toLocaleDateString('ar-SA') : '—',
-        _id: request._id,
-        fullData: request,
-      }));
-      setOrders(formatted);
-    } catch (error) {
-      console.error('Error loading orders:', error);
-      toast.error('فشل تحميل الطلبات');
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const handleDelete = async (orderId) => {
     try {
       if (confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
         await requestAPI.cancelRequest(orderId);
-        setOrders(orders.filter(o => o._id !== orderId));
         toast.success('تم حذف الطلب بنجاح');
+        refreshAll(); // sync context with server
       }
     } catch (error) {
       console.error('Error deleting order:', error);
@@ -71,7 +60,7 @@ const OrdersPage = () => {
       await requestAPI.updateRequestStatus(selectedOrder._id, newStatus);
       toast.success('تم تحديث حالة الطلب بنجاح');
       setSelectedOrder(null);
-      loadOrders(); // reload
+      refreshAll(); // sync context with server
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('فشل تحديث حالة الطلب');

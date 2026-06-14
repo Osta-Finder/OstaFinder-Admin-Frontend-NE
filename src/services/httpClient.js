@@ -2,7 +2,6 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const TOKEN_KEY = 'accessToken';
 
 // Create axios instance
 const httpClient = axios.create({
@@ -13,59 +12,97 @@ const httpClient = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor - add auth token
-httpClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+// --- Token refresh state to avoid multiple simultaneous refresh calls ---
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
+  });
+  failedQueue = [];
+};
+
+// Request interceptor - no-op (cookies are sent automatically via withCredentials)
+httpClient.interceptors.request.use(
+  (config) => config,
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor - handle errors
 httpClient.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
-  (error) => {
-    // Don't show toast for registration/login errors - let components handle them
-    const isAuthRoute = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
-    
-    // Handle 401 - unauthorized
-    if (error.response?.status === 401 && !isAuthRoute) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('user');
-      toast.error('انتهت صلاحية جلستك. يرجى تسجيل الدخول مجدداً');
-      window.location.href = '/login';
+  (response) => response.data,
+  async (error) => {
+    const originalRequest = error.config;
+
+    const isAuthRoute =
+      originalRequest?.url?.includes('/auth/login') ||
+      originalRequest?.url?.includes('/auth/register') ||
+      originalRequest?.url?.includes('/auth/refresh');
+
+    // ── 401: Try to silently refresh the token, then retry ──
+    if (error.response?.status === 401 && !isAuthRoute && !originalRequest._retry) {
+      if (isRefreshing) {
+        // Queue this request while refresh is in progress
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => httpClient(originalRequest))
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Hit refresh endpoint (uses httpOnly refreshToken cookie automatically)
+        await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+        processQueue(null);
+        isRefreshing = false;
+        // Retry the original request
+        return httpClient(originalRequest);
+      } catch (refreshError) {
+        // Refresh also failed → logout the user
+        processQueue(refreshError);
+        isRefreshing = false;
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('user');
+        toast.error('انتهت صلاحية جلستك. يرجى تسجيل الدخول مجدداً', {
+          toastId: 'session-expired', // deduplicate
+        });
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
     }
 
-    // Handle 403 - forbidden
+    // ── 403 ──
     if (error.response?.status === 403 && !isAuthRoute) {
-      toast.error('ليس لديك صلاحية للوصول إلى هذا');
+      toast.error('ليس لديك صلاحية للوصول إلى هذا', { toastId: 'err-403' });
+      return Promise.reject(error);
     }
 
-    // Handle 404
+    // ── 404 ──
     if (error.response?.status === 404 && !isAuthRoute) {
-      toast.error('لم يتم العثور على البيانات المطلوبة');
+      toast.error('لم يتم العثور على البيانات المطلوبة', { toastId: 'err-404' });
+      return Promise.reject(error);
     }
 
-    // Handle 500
+    // ── 500 ──
     if (error.response?.status === 500 && !isAuthRoute) {
-      toast.error('حدث خطأ في الخادم. يرجى المحاولة لاحقاً');
+      toast.error('حدث خطأ في الخادم. يرجى المحاولة لاحقاً', { toastId: 'err-500' });
+      return Promise.reject(error);
     }
 
-    // Show generic error only if not auth route
+    // ── Generic errors (non-auth routes only) ──
     if (!isAuthRoute) {
-      if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else if (error.message) {
-        toast.error(error.message);
+      const msg = error.response?.data?.message || error.message;
+      if (msg) {
+        // Use the message as toastId so identical messages don't stack
+        toast.error(msg, { toastId: msg });
       }
     }
 

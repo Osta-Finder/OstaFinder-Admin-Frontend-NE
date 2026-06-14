@@ -105,14 +105,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600 text-sm">
-              ليس لديك حساب؟{' '}
-              <Link to="/register" className="text-[#D97706] hover:text-[#B45309] font-bold">
-                إنشاء حساب جديد
-              </Link>
-            </p>
-          </div>
+
         </div>
       </div>
     </div>
