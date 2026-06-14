@@ -30,10 +30,8 @@ const StatCard = ({ title, value, icon: Icon, colorClass, loading }) => (
 );
 
 const TechnicianApprovalsPage = () => {
-  // Use the shared pending workers list — no duplicate fetch
-  const { pendingWorkers, loading: contextLoading, refreshAll } = useAdminData();
-
-  const [categories, setCategories] = useState([]);
+  // Use the shared pending workers list and categories — no duplicate fetch
+  const { pendingWorkers, categories, loading: contextLoading, refreshAll } = useAdminData();
   const [activeCategory, setActiveCategory] = useState('');   // '' = الكل
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -50,12 +48,7 @@ const TechnicianApprovalsPage = () => {
     }
   }, [pendingWorkers, contextLoading]);
 
-  // Load categories once (lightweight, not duplicated elsewhere)
-  useEffect(() => {
-    categoryAPI.getCategories()
-      .then((data) => setCategories(Array.isArray(data) ? data : (data?.data || [])))
-      .catch(console.error);
-  }, []);
+  // Categories are now automatically loaded from context.
 
   // Derived stats
   const today = new Date();

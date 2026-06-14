@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import { categoryAPI } from '../services/adminApi';
+import { useAdminData } from '../store/AdminDataContext';
 
 const ICON_MAP = {
   'WrenchIcon': WrenchIcon,
@@ -43,8 +44,7 @@ const renderIcon = (iconStr, className = "w-8 h-8") => {
 };
 
 export default function ServicesPage() {
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { categories: services, loading, refreshAll } = useAdminData();
   const [selectedService, setSelectedService] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -57,24 +57,7 @@ export default function ServicesPage() {
     icon: 'WrenchIcon',
   });
 
-  // Load services on mount
-  useEffect(() => {
-    loadServices();
-  }, []);
-
-  const loadServices = async () => {
-    try {
-      setLoading(true);
-      const data = await categoryAPI.getCategories();
-      setServices(data);
-    } catch (error) {
-      console.error('Error loading services:', error);
-      toast.error('فشل تحميل الخدمات');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Data is loaded from context automatically.
   const handleAddService = async () => {
     if (!newService.name) {
       toast.error('يرجى ملء اسم الخدمة');
@@ -89,7 +72,7 @@ export default function ServicesPage() {
       setNewService({ name: '', icon: 'WrenchIcon' });
       setShowAddModal(false);
       toast.success('تم إضافة الخدمة بنجاح');
-      loadServices();
+      refreshAll();
     } catch (error) {
       console.error('Error adding service:', error);
       toast.error('فشل إضافة الخدمة');
@@ -130,7 +113,7 @@ export default function ServicesPage() {
       });
       setShowEditModal(false);
       toast.success('تم تحديث الخدمة بنجاح');
-      loadServices();
+      refreshAll();
     } catch (error) {
       console.error('Error updating service:', error);
       toast.error('فشل تحديث الخدمة');
@@ -143,7 +126,7 @@ export default function ServicesPage() {
         await categoryAPI.deleteCategory(serviceId);
         setSelectedService(null);
         toast.success('تم حذف الخدمة بنجاح');
-        loadServices();
+        refreshAll();
       } catch (error) {
         console.error('Error deleting service:', error);
         toast.error('فشل حذف الخدمة');

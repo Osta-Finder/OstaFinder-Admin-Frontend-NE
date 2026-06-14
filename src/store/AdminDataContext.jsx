@@ -18,7 +18,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { workerAPI, requestAPI } from '../services/adminApi';
+import { workerAPI, requestAPI, categoryAPI, userAPI } from '../services/adminApi';
 
 const AdminDataContext = createContext(null);
 
@@ -28,43 +28,51 @@ export const AdminDataProvider = ({ children }) => {
   const [pendingWorkers, setPendingWorkers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [requestStats, setRequestStats] = useState({});
-  const [workers, setWorkers] = useState([]);       // all workers (for reports page)
+  const [workers, setWorkers] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [clientsData, setClientsData] = useState({ data: [], total: 0, pages: 1 });
   const [loading, setLoading] = useState(true);
   const isMounted = useRef(true);
-  const fetchingRef = useRef(false);               // guard: prevent concurrent fetches
+  const fetchingRef = useRef(false);
 
   useEffect(() => {
     isMounted.current = true;
     return () => { isMounted.current = false; };
   }, []);
 
-  /**
-   * fetchAll — fires a single batch of 4 parallel requests.
-   * Subsequent calls within the same 60-second window are no-ops
-   * unless triggered by refreshAll() explicitly.
-   */
   const fetchAll = useCallback(async () => {
-    if (fetchingRef.current) return;   // already in-flight, skip
+    if (fetchingRef.current) return;
     fetchingRef.current = true;
     try {
-      const [pendingRes, ordersRes, statsRes, workersRes] = await Promise.all([
+      // Import userAPI and categoryAPI from adminApi if not already (we'll ensure they are)
+      const [
+        pendingRes,
+        ordersRes,
+        statsRes,
+        workersRes,
+        categoriesRes,
+        clientsRes
+      ] = await Promise.all([
         workerAPI.getPendingWorkers(),
         requestAPI.getAllRequests(),
         requestAPI.getRequestStats(),
         workerAPI.getAllWorkers({ limit: 1000 }),
+        categoryAPI.getCategories(),
+        userAPI.getAllUsers({ page: 1, limit: 15, role: 'client' }),
       ]);
 
       if (!isMounted.current) return;
 
-      const pending    = Array.isArray(pendingRes)  ? pendingRes  : (pendingRes?.data  || []);
-      const allOrders  = Array.isArray(ordersRes)   ? ordersRes   : (ordersRes?.data   || []);
-      const stats      = statsRes  || {};
-      const allWorkers = Array.isArray(workersRes)  ? workersRes  : (workersRes?.data  || []);
-
-      setPendingWorkers(pending);
-      setOrders(allOrders);
-      setRequestStats(stats);
-      setWorkers(allWorkers);
+      setPendingWorkers(Array.isArray(pendingRes) ? pendingRes : (pendingRes?.data || []));
+      setOrders(Array.isArray(ordersRes) ? ordersRes : (ordersRes?.data || []));
+      setRequestStats(statsRes || {});
+      setWorkers(Array.isArray(workersRes) ? workersRes : (workersRes?.data || []));
+      setCategories(Array.isArray(categoriesRes) ? categoriesRes : (categoriesRes?.data || []));
+      setClientsData({
+        data: clientsRes?.data || [],
+        total: clientsRes?.total || 0,
+        pages: clientsRes?.pages || 1,
+      });
     } catch (err) {
       console.error('[AdminDataContext] fetch error:', err);
     } finally {
@@ -87,6 +95,8 @@ export const AdminDataProvider = ({ children }) => {
     requestStats,
     workers,
     workersCount: workers.length,
+    categories,
+    clientsData,
     loading,
     refreshAll: fetchAll,
   };

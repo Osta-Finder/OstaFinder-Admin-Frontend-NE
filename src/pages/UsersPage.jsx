@@ -11,6 +11,7 @@ import {
 import { toast } from 'react-toastify';
 import Table from '../components/UI/Table';
 import { userAPI, workerAPI } from '../services/adminApi';
+import { useAdminData } from '../store/AdminDataContext';
 
 // ─── Add User Modal ───────────────────────────────────────────────────────────
 const AddUserModal = ({ onClose, onCreated }) => {
@@ -149,6 +150,8 @@ const TabButton = ({ active, onClick, icon: Icon, label, count }) => (
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const UsersPage = () => {
+  const { clientsData } = useAdminData();
+
   // Tab: 'clients' | 'workers' | 'admins'
   const [activeTab, setActiveTab]     = useState('clients');
 
@@ -173,7 +176,6 @@ const UsersPage = () => {
         const params = { page, limit: LIMIT };
         if (searchTerm.trim()) params.search = searchTerm.trim();
         const res = await workerAPI.getAllWorkers(params);
-        // res = array OR { data: [...], total, pages }
         if (Array.isArray(res)) {
           setUsers(res);
           setTotal(res.length);
@@ -185,6 +187,16 @@ const UsersPage = () => {
         }
       } else {
         const roleMap = { clients: 'client', admins: 'admin' };
+        
+        // Use cached global data for initial clients view to avoid duplicate network request
+        if (activeTab === 'clients' && page === 1 && !searchTerm.trim() && clientsData?.data?.length > 0) {
+          setUsers(clientsData.data);
+          setTotal(clientsData.total);
+          setPages(clientsData.pages);
+          setLoading(false);
+          return;
+        }
+
         const params = { page, limit: LIMIT, role: roleMap[activeTab] };
         if (searchTerm.trim()) params.search = searchTerm.trim();
         const res = await userAPI.getAllUsers(params);
@@ -198,7 +210,7 @@ const UsersPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, searchTerm, activeTab]);
+  }, [page, searchTerm, activeTab, clientsData]);
 
   useEffect(() => {
     const timer = setTimeout(loadData, searchTerm ? 400 : 0);
