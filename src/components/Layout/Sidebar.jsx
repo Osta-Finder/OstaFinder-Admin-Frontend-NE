@@ -32,10 +32,12 @@ const Sidebar = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('isLoggedIn');
     toast.success('تم تسجيل الخروج بنجاح');
     setTimeout(() => {
-      navigate('/');
-    }, 1000);
+      navigate('/login');
+    }, 500);
   };
 
   return (

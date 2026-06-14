@@ -21,7 +21,13 @@ export default function LoginPage() {
       
       if (response && response.user) {
         // Backend uses httpOnly cookies, so we just store user data
-        localStorage.setItem('user', JSON.stringify(response.user));
+        const userData = response.user;
+        // Restore previously saved avatar if exists
+        const savedAvatar = localStorage.getItem('userAvatar');
+        if (savedAvatar) {
+          userData.avatar = savedAvatar;
+        }
+        localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('isLoggedIn', 'true');
         toast.success('تم تسجيل الدخول بنجاح');
         setTimeout(() => {

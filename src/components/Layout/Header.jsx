@@ -31,11 +31,26 @@ const Header = () => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) setUser(JSON.parse(storedUser));
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser);
+      // Restore saved avatar if not already on the user object
+      const savedAvatar = localStorage.getItem('userAvatar');
+      if (savedAvatar && !parsed.avatar) {
+        parsed.avatar = savedAvatar;
+      }
+      setUser(parsed);
+    }
 
     const handleUserUpdate = () => {
       const updatedUser = localStorage.getItem('user');
-      if (updatedUser) setUser(JSON.parse(updatedUser));
+      if (updatedUser) {
+        const parsed = JSON.parse(updatedUser);
+        const savedAvatar = localStorage.getItem('userAvatar');
+        if (savedAvatar && !parsed.avatar) {
+          parsed.avatar = savedAvatar;
+        }
+        setUser(parsed);
+      }
     };
     window.addEventListener('userUpdated', handleUserUpdate);
     return () => window.removeEventListener('userUpdated', handleUserUpdate);
@@ -154,6 +169,8 @@ const Header = () => {
         };
         setUser(newUser);
         localStorage.setItem('user', JSON.stringify(newUser));
+        // Save avatar separately so it persists across logout/login
+        localStorage.setItem('userAvatar', event.target?.result);
         window.dispatchEvent(new Event('userUpdated'));
         toast.success('تم تحديث الصورة بنجاح');
       };
@@ -303,37 +320,6 @@ const Header = () => {
             )}
           </div>
           
-          <div className="relative">
-            <button 
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <Cog6ToothIcon className="w-6 h-6" />
-            </button>
-
-            {showMenu && (
-              <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                <button
-                  onClick={handleSettings}
-                  className="w-full text-right px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3 text-gray-700"
-                >
-                  <Cog6ToothIcon className="w-5 h-5" />
-                  <span>الإعدادات</span>
-                </button>
-                <div className="border-t border-gray-200"></div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-right px-4 py-3 hover:bg-red-50 transition-colors flex items-center gap-3 text-red-600"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  <span>تسجيل الخروج</span>
-                </button>
-              </div>
-            )}
-          </div>
-
           <div className="relative">
             <button
               onClick={handleProfileClick}
