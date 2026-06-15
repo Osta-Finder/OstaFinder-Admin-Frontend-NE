@@ -34,6 +34,7 @@ const Sidebar = () => {
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userAvatar');
     toast.success('تم تسجيل الخروج بنجاح');
     setTimeout(() => {
       navigate('/login');

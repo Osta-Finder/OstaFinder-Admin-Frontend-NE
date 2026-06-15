@@ -23,13 +23,11 @@ export default function LoginPage() {
       if (response && response.user) {
         // Backend uses httpOnly cookies, so we just store user data
         const userData = response.user;
-        // Restore previously saved avatar if exists
-        const savedAvatar = localStorage.getItem('userAvatar');
-        if (savedAvatar) {
-          userData.avatar = savedAvatar;
-        }
+        // مسح الـ avatar القديم عشان ميظهرش لأدمن جديد
+        localStorage.removeItem('userAvatar');
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('isLoggedIn', 'true');
+        window.dispatchEvent(new Event('userUpdated')); // sync Header avatar
         toast.success('تم تسجيل الدخول بنجاح');
         setTimeout(() => {
           navigate('/dashboard');
