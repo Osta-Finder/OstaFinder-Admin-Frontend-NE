@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   UserPlusIcon,
   MagnifyingGlassIcon,
@@ -162,63 +162,93 @@ const UsersPage = () => {
   const [pages, setPages]             = useState(1);
   const [loading, setLoading]         = useState(true);
   const [searchTerm, setSearchTerm]   = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal]     = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
 
   const LIMIT = 15;
+  const requestIdRef = useRef(0);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(prev => {
+        if (prev !== searchTerm) {
+          setPage(1);
+          return searchTerm;
+        }
+        return prev;
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // ── Fetch users or workers depending on the active tab ──
   const loadData = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
 
       if (activeTab === 'workers') {
         const params = { page, limit: LIMIT };
-        if (searchTerm.trim()) params.search = searchTerm.trim();
+        if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
         const res = await workerAPI.getAllWorkers(params);
+        
+        if (requestId !== requestIdRef.current) return; // Cancelled by newer request
+        
         if (Array.isArray(res)) {
           setUsers(res);
           setTotal(res.length);
           setPages(1);
         } else {
           setUsers(res.data || []);
-          setTotal(res.total || res.results || (res.data?.length ?? 0));
-          setPages(res.pages || 1);
+          const totalCount = res.total || res.results || (res.data?.length ?? 0);
+          setTotal(totalCount);
+          setPages(res.pages || res.totalPages || Math.ceil(totalCount / LIMIT) || 1);
+          if (res.page || res.currentPage) setPage(res.page || res.currentPage);
         }
       } else {
         const roleMap = { clients: 'client', admins: 'admin' };
         
         // Use cached global data for initial clients view to avoid duplicate network request
-        if (activeTab === 'clients' && page === 1 && !searchTerm.trim() && clientsData?.data?.length > 0) {
+        if (activeTab === 'clients' && page === 1 && !debouncedSearch.trim() && clientsData?.data?.length > 0) {
+          if (requestId !== requestIdRef.current) return;
           setUsers(clientsData.data);
           setTotal(clientsData.total);
-          setPages(clientsData.pages);
+          setPages(clientsData.pages || Math.ceil(clientsData.total / LIMIT) || 1);
           setLoading(false);
           return;
         }
 
         const params = { page, limit: LIMIT, role: roleMap[activeTab] };
-        if (searchTerm.trim()) params.search = searchTerm.trim();
+        if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
         const res = await userAPI.getAllUsers(params);
+        
+        if (requestId !== requestIdRef.current) return; // Cancelled by newer request
+        
         setUsers(res.data || []);
-        setTotal(res.total || 0);
-        setPages(res.pages || 1);
+        const totalCount = res.total || res.results || 0;
+        setTotal(totalCount);
+        setPages(res.pages || res.totalPages || Math.ceil(totalCount / LIMIT) || 1);
+        if (res.page || res.currentPage) setPage(res.page || res.currentPage);
       }
     } catch (err) {
+      if (requestId !== requestIdRef.current) return; // Ignore stale error
       console.error('Error loading data:', err);
       toast.error('فشل تحميل البيانات');
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
-  }, [page, searchTerm, activeTab, clientsData]);
+  }, [page, debouncedSearch, activeTab, clientsData]);
 
   useEffect(() => {
-    const timer = setTimeout(loadData, searchTerm ? 400 : 0);
-    return () => clearTimeout(timer);
+    loadData();
   }, [loadData]);
 
-  // Reset page on tab / search change
-  useEffect(() => { setPage(1); }, [activeTab, searchTerm]);
+  // Reset page on tab change
+  useEffect(() => { setPage(1); }, [activeTab]);
 
   // ── Delete (soft-delete for clients/admins, no delete for workers from here) ──
   const handleDelete = async (userId, userName) => {

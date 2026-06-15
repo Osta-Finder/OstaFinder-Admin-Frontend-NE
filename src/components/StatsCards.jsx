@@ -7,14 +7,9 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
-// Egyptian Pound formatter
-const EGP = (value) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'EGP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+// Egyptian Pound formatter — بتعرض الأرقام إنجليزي مع ج.م
+const formatEGP = (value) =>
+  `${Number(value).toLocaleString('en-US')} ج.م`;
 
 const StatsCards = () => {
   // Use shared context — no independent API call from this component
@@ -52,7 +47,7 @@ const StatsCards = () => {
     },
     {
       label:       'الإيرادات التقديرية',
-      value:       EGP(estimatedRevenue),
+      value:       formatEGP(estimatedRevenue),
       change:      '',
       icon:        <CurrencyDollarIcon className="w-7 h-7" />,
       bgColor:     'bg-blue-50',
