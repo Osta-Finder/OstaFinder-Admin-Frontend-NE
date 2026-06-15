@@ -53,7 +53,7 @@ const StatsCards = () => {
     {
       label:       'الإيرادات التقديرية',
       value:       EGP(estimatedRevenue),
-      change:      `${completedRequests} طلب × ${EGP(avgOrderPrice)} متوسط`,
+      change:      '',
       icon:        <CurrencyDollarIcon className="w-7 h-7" />,
       bgColor:     'bg-blue-50',
       borderColor: 'border-blue-100',
@@ -81,9 +81,11 @@ const StatsCards = () => {
             <div className={`w-14 h-14 rounded-2xl ${stat.bgColor} ${stat.textColor} flex items-center justify-center text-3xl shadow-sm border ${stat.borderColor} group-hover:scale-110 transition-transform duration-300`}>
               {stat.icon}
             </div>
-            <span className={`${stat.textColor} ${stat.bgColor} text-xs font-bold px-3 py-1.5 rounded-full border ${stat.borderColor} text-right max-w-[120px] leading-tight`}>
-              {stat.change}
-            </span>
+            {stat.change && (
+              <span className={`${stat.textColor} ${stat.bgColor} text-xs font-bold px-3 py-1.5 rounded-full border ${stat.borderColor} text-right max-w-[120px] leading-tight`}>
+                {stat.change}
+              </span>
+            )}
           </div>
 
           <p className="text-gray-500 text-sm font-semibold mb-1 text-right">

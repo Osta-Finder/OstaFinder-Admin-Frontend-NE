@@ -97,15 +97,15 @@ export default function RevenueChart({ orders = [], loading = false }) {
       <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">الأعلى</p>
-          <p className="text-lg font-bold text-gray-900">{Math.max(...computedData.map(d => d.value), 0).toLocaleString('ar-SA')} ر.س</p>
+          <p className="text-lg font-bold text-gray-900">{Math.max(...computedData.map(d => d.value), 0).toLocaleString('ar-EG')} ج.م</p>
         </div>
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">المتوسط</p>
-          <p className="text-lg font-bold text-gray-900">{computedData.length > 0 ? Math.round(computedData.reduce((s, d) => s + d.value, 0) / computedData.length).toLocaleString('ar-SA') : 0} ر.س</p>
+          <p className="text-lg font-bold text-gray-900">{computedData.length > 0 ? Math.round(computedData.reduce((s, d) => s + d.value, 0) / computedData.length).toLocaleString('ar-EG') : 0} ج.م</p>
         </div>
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">الأقل</p>
-          <p className="text-lg font-bold text-gray-900">{Math.min(...computedData.map(d => d.value), 0).toLocaleString('ar-SA')} ر.س</p>
+          <p className="text-lg font-bold text-gray-900">{Math.min(...computedData.map(d => d.value), 0).toLocaleString('ar-EG')} ج.م</p>
         </div>
       </div>
     </div>

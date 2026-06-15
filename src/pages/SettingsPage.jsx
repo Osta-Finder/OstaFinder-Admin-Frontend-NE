@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
 const DEFAULT_SETTINGS = {
-  companyName: 'أوستا أمن',
-  email: 'info@ousta-amn.com',
-  phone: '+966501234567',
-  address: 'الرياض، المملكة العربية السعودية',
+  companyName: 'أوستا',
+  email: 'info@ousta.com',
+  phone: '+201000000000',
+  address: 'القاهرة، مصر',
   notifications: true,
   darkMode: false,
   language: 'ar',

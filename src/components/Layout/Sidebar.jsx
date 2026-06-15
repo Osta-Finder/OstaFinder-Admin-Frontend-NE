@@ -18,7 +18,7 @@ const navItems = [
   { name: 'إدارة المستخدمين', icon: UsersIcon, path: '/users' },
   { name: 'التحليلات', icon: ChartBarIcon, path: '/analytics' },
   { name: 'إدارة الطلبات', icon: WrenchScrewdriverIcon, path: '/orders' },
-  { name: 'الدعم الفني', icon: ChatBubbleLeftEllipsisIcon, path: '/support' },
+  // { name: 'الدعم الفني', icon: ChatBubbleLeftEllipsisIcon, path: '/support' },
 ];
 
 const Sidebar = () => {
