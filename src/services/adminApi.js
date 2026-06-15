@@ -16,10 +16,10 @@ export const workerAPI = {
     return response.data;
   },
 
-  // Get all workers (with pagination/filtering)
+  // Get all workers (with pagination/filtering) for Admin
   getAllWorkers: async (params = {}) => {
-    const response = await httpClient.get('/workers', { params });
-    // backend: { success, results, pagination, data: [...] }
+    const response = await httpClient.get('/workers/admin', { params });
+    // backend: { success, total, pages, page, limit, data: [...] }
     return response.data || [];
   },
 

@@ -56,7 +56,7 @@ export const AdminDataProvider = ({ children }) => {
         workerAPI.getPendingWorkers(),
         requestAPI.getAllRequests(),
         requestAPI.getRequestStats(),
-        workerAPI.getAllWorkers({ limit: 1000 }),
+        workerAPI.getAllWorkers({ limit: 1 }), // We only need total count here, avoid massive queries
         categoryAPI.getCategories(),
         userAPI.getAllUsers({ page: 1, limit: 15, role: 'client' }),
       ]);
@@ -66,7 +66,16 @@ export const AdminDataProvider = ({ children }) => {
       setPendingWorkers(Array.isArray(pendingRes) ? pendingRes : (pendingRes?.data || []));
       setOrders(Array.isArray(ordersRes) ? ordersRes : (ordersRes?.data || []));
       setRequestStats(statsRes || {});
-      setWorkers(Array.isArray(workersRes) ? workersRes : (workersRes?.data || []));
+      
+      const count = workersRes?.total ?? (Array.isArray(workersRes) ? workersRes.length : (workersRes?.data?.length || 0));
+      // Store count inside state or a ref. Since it's primitive, we can just create a state for it at the top,
+      // but let's just make `workers` a proper empty array or whatever is needed, and we'll export the accurate count.
+      // Wait, we need to declare workersCount state if we don't have it.
+      // But we can just use `workers` state to hold a dummy array of length `count` so `workers.length` evaluates correctly!
+      // Example: setWorkers(new Array(count).fill(null))
+      // Yes, `setWorkers(new Array(count).fill(null))` is extremely clean because it doesn't break `workersCount: workers.length` downstream!
+      setWorkers(new Array(count).fill(null));
+
       setCategories(Array.isArray(categoriesRes) ? categoriesRes : (categoriesRes?.data || []));
       setClientsData({
         data: clientsRes?.data || [],
