@@ -51,23 +51,33 @@ const OrdersPage = () => {
   const [deletingId, setDeletingId]     = useState(null);
 
   const requestIdRef = useRef(0);
+  // ✅ FIX 3: dedup guard — skip fetch if params haven’t actually changed.
+  const prevParamsRef = useRef(null);
 
-  // ── Debounce search ────────────────────────────────────────────────────────
+  // ✅ FIX 2: separate setPage and setDebouncedSearch — nested setState inside a
+  // state-updater function causes an extra render, firing loadData twice.
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(prev => {
-        if (prev !== searchTerm) { setPage(1); return searchTerm; }
-        return prev;
-      });
+      if (debouncedSearch !== searchTerm) {
+        setPage(1);
+        setDebouncedSearch(searchTerm);
+      }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]); // intentionally omit debouncedSearch to avoid loop
 
   // ── Reset page on filter change ────────────────────────────────────────────
   useEffect(() => { setPage(1); }, [statusFilter]);
 
   // ── Fetch from Backend ─────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
+    // ✅ FIX 3: skip fetch if params haven't changed (prevents double-fire when
+    // setPage(1) + setDebouncedSearch both update in the same 500 ms window).
+    const paramsKey = `${page}-${debouncedSearch}-${statusFilter}`;
+    if (prevParamsRef.current === paramsKey) return;
+    prevParamsRef.current = paramsKey;
+
     const requestId = ++requestIdRef.current;
     const isFirstLoad = orders.length === 0;
     try {
