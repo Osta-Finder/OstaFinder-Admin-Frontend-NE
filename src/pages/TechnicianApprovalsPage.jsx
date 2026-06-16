@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
 import {
   ClipboardDocumentListIcon,
@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Table from '../components/UI/Table';
 import Badge from '../components/UI/Badge';
-import { workerAPI, categoryAPI } from '../services/adminApi';
+import { workerAPI } from '../services/adminApi';
 import { useAdminData } from '../store/AdminDataContext';
 
 const StatCard = ({ title, value, icon: Icon, colorClass, loading }) => (
@@ -29,78 +29,100 @@ const StatCard = ({ title, value, icon: Icon, colorClass, loading }) => (
   </div>
 );
 
+const LIMIT = 15;
+
 const TechnicianApprovalsPage = () => {
-  // Use the shared pending workers list and categories — no duplicate fetch
-  const { pendingWorkers, categories, loading: contextLoading, refreshAll } = useAdminData();
-  const [activeCategory, setActiveCategory] = useState('');   // '' = الكل
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const { categories, refreshAll } = useAdminData();
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [workers, setWorkers]           = useState([]);
+  const [total, setTotal]               = useState(0);
+  const [page, setPage]                 = useState(1);
+  const [pages, setPages]               = useState(1);
+  const [loading, setLoading]           = useState(true);
+  const [searchTerm, setSearchTerm]     = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [activeCategory, setActiveCategory]   = useState('');
+  const [showModal, setShowModal]       = useState(false);
   const [selectedTech, setSelectedTech] = useState(null);
-  const [approving, setApproving] = useState(false);
-  const [localList, setLocalList] = useState([]);  // local copy for optimistic removal
-  const [initialised, setInitialised] = useState(false);
+  const [approving, setApproving]       = useState(false);
 
-  // Sync local list with context when context loads
+  const requestIdRef = useRef(0);
+
+  // ── Debounce search ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!contextLoading) {
-      setLocalList(pendingWorkers);
-      setInitialised(true);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(prev => {
+        if (prev !== searchTerm) { setPage(1); return searchTerm; }
+        return prev;
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // ── Reset page on filter change ────────────────────────────────────────────
+  useEffect(() => { setPage(1); }, [activeCategory]);
+
+  // ── Fetch from Backend ─────────────────────────────────────────────────────
+  const loadData = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    try {
+      setLoading(true);
+      const params = { page, limit: LIMIT };
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+      if (activeCategory) params.category = activeCategory;
+
+      const res = await workerAPI.getPendingWorkers(params);
+      if (requestId !== requestIdRef.current) return;
+
+      // res = { success, data: [...], total, pages, page, limit }
+      setWorkers(res.data || []);
+      setTotal(res.total || 0);
+      setPages(res.pages || 1);
+    } catch (err) {
+      if (requestId !== requestIdRef.current) return;
+      console.error('Error loading pending workers:', err);
+      toast.error('فشل تحميل طلبات الاعتماد');
+    } finally {
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [pendingWorkers, contextLoading]);
+  }, [page, debouncedSearch, activeCategory]);
 
-  // Categories are now automatically loaded from context.
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // Derived stats
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // ── Derived stats ──────────────────────────────────────────────────────────
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-  const urgent = localList.filter(w => w.createdAt && new Date(w.createdAt) < threeDaysAgo).length;
+  const urgent = workers.filter(w => w.createdAt && new Date(w.createdAt) < threeDaysAgo).length;
 
-  // Format a worker from the model to the shape the table expects
+  // ── Format worker for table/modal ──────────────────────────────────────────
   const fmt = (worker) => ({
-    id:              worker._id,
-    name:            worker.name || 'بدون اسم',
-    email:           worker.email || '',
-    phoneNumber:     worker.phoneNumber || '',
-    specialty:       worker.category?.name || 'غير محدد',
-    experience:      worker.yearsOfExperience ? `${worker.yearsOfExperience} سنوات` : 'غير محدد',
-    status:          'قيد المراجعة',
-    bio:             worker.bio || '',
-    nationalId:      worker.nationalId || '',
-    certificates:    worker.certificates || [],
-    city:            worker.city || '',
-    address:         worker.address || '',
-    profilePicture:  worker.profilePicture || worker.image || null,
-    approvalStatus:  worker.approvalStatus,
-    createdAt:       worker.createdAt,
-    initials:        worker.name ? worker.name.substring(0, 2).toUpperCase() : 'WK',
+    id:             worker._id,
+    name:           worker.name || 'بدون اسم',
+    email:          worker.email || '',
+    phoneNumber:    worker.phoneNumber || '',
+    specialty:      worker.category?.name || 'غير محدد',
+    experience:     worker.yearsOfExperience ? `${worker.yearsOfExperience} سنوات` : 'غير محدد',
+    status:         'قيد المراجعة',
+    bio:            worker.bio || '',
+    nationalId:     worker.nationalId || '',
+    certificates:   worker.certificates || [],
+    city:           worker.city || '',
+    address:        worker.address || '',
+    profilePicture: worker.profilePicture || worker.image || null,
+    approvalStatus: worker.approvalStatus,
+    createdAt:      worker.createdAt,
+    initials:       worker.name ? worker.name.substring(0, 2).toUpperCase() : 'WK',
   });
 
-  // Filtered list (category dropdown + search)
-  const filtered = localList
-    .map(fmt)
-    .filter(t => {
-      const matchCat  = !activeCategory || t.specialty === activeCategory;
-      const matchSearch = !searchTerm.trim() ||
-        t.name.includes(searchTerm) ||
-        t.email.includes(searchTerm) ||
-        t.phoneNumber.includes(searchTerm);
-      return matchCat && matchSearch;
-    });
-
-  const removeFromList = useCallback((id) => {
-    setLocalList(prev => prev.filter(w => w._id !== id));
-    // Also trigger a silent global refresh so other widgets update
-    refreshAll();
-  }, [refreshAll]);
-
+  // ── Approve / Reject ───────────────────────────────────────────────────────
   const handleApprove = async (tech) => {
     try {
       setApproving(true);
       await workerAPI.updateWorkerApproval(tech.id, 'approved');
       toast.success('تم اعتماد الفني بنجاح');
-      removeFromList(tech.id);
       setShowModal(false);
+      loadData();
+      refreshAll();
     } catch {
       toast.error('فشل اعتماد الفني');
     } finally {
@@ -113,8 +135,9 @@ const TechnicianApprovalsPage = () => {
       setApproving(true);
       await workerAPI.updateWorkerApproval(tech.id, 'rejected');
       toast.success('تم رفض الفني');
-      removeFromList(tech.id);
       setShowModal(false);
+      loadData();
+      refreshAll();
     } catch {
       toast.error('فشل رفض الفني');
     } finally {
@@ -122,6 +145,7 @@ const TechnicianApprovalsPage = () => {
     }
   };
 
+  // ── Table row ──────────────────────────────────────────────────────────────
   const renderRow = (tech) => (
     <>
       <td className="px-6 py-4">
@@ -144,16 +168,24 @@ const TechnicianApprovalsPage = () => {
       <td className="px-6 py-4"><Badge status={tech.status}>{tech.status}</Badge></td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2 justify-end">
-          <button onClick={() => { setSelectedTech(tech); setShowModal(true); }}
-            className="text-orange-600 hover:text-orange-700 font-medium text-sm px-3 py-1 rounded-lg hover:bg-orange-50 transition-colors">
+          <button
+            onClick={() => { setSelectedTech(tech); setShowModal(true); }}
+            className="text-orange-600 hover:text-orange-700 font-medium text-sm px-3 py-1 rounded-lg hover:bg-orange-50 transition-colors"
+          >
             عرض التفاصيل
           </button>
-          <button onClick={() => handleApprove(tech)} disabled={approving}
-            className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-semibold px-3 py-1 rounded-lg transition-colors text-sm">
+          <button
+            onClick={() => handleApprove(tech)}
+            disabled={approving}
+            className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-semibold px-3 py-1 rounded-lg transition-colors text-sm"
+          >
             {approving ? '...' : 'اعتماد'}
           </button>
-          <button onClick={() => handleReject(tech)} disabled={approving}
-            className="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white font-semibold px-3 py-1 rounded-lg transition-colors text-sm">
+          <button
+            onClick={() => handleReject(tech)}
+            disabled={approving}
+            className="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white font-semibold px-3 py-1 rounded-lg transition-colors text-sm"
+          >
             {approving ? '...' : 'رفض'}
           </button>
         </div>
@@ -161,66 +193,149 @@ const TechnicianApprovalsPage = () => {
     </>
   );
 
-  const loading = contextLoading && !initialised;
+  const formattedWorkers = workers.map(fmt);
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">طلبات اعتماد الفنيين</h1>
-        <p className="text-gray-600 text-sm lg:text-base">مراجعة واعتماد طلبات الانضمام الجديدة للمنصة</p>
+        <p className="text-gray-600 text-sm lg:text-base">
+          {loading ? 'جاري التحميل...' : `${total.toLocaleString('en-US')} طلب معلق`}
+        </p>
       </div>
 
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="إجمالي الطلبات المعلقة"
+          value={total}
+          icon={ClipboardDocumentListIcon}
+          colorClass="bg-orange-50 text-orange-500 border-orange-100"
+          loading={loading}
+        />
+        <StatCard
+          title="طلبات عاجلة (+3 أيام)"
+          value={urgent}
+          icon={ExclamationCircleIcon}
+          colorClass="bg-red-50 text-red-500 border-red-100"
+          loading={loading}
+        />
+        <StatCard
+          title="الفئات المتاحة"
+          value={categories.length}
+          icon={CheckCircleIcon}
+          colorClass="bg-green-50 text-green-500 border-green-100"
+          loading={loading}
+        />
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="بحث بالاسم أو البريد أو الهاتف..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full border border-gray-200 rounded-full py-2.5 px-5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 shadow-sm"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <AdjustmentsHorizontalIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <select
+            value={activeCategory}
+            onChange={e => setActiveCategory(e.target.value)}
+            className="border border-gray-200 rounded-full px-5 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 shadow-sm cursor-pointer appearance-none"
+          >
+            <option value="">كل التخصصات</option>
+            {categories.map(cat => (
+              <option key={cat._id} value={cat.name}>{cat.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Table */}
       {loading ? (
-        <div className="flex justify-center items-center py-12">
+        <div className="flex justify-center items-center py-24">
           <div className="w-10 h-10 border-4 border-orange-400/30 border-t-orange-500 rounded-full animate-spin" />
+        </div>
+      ) : formattedWorkers.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <ClipboardDocumentListIcon className="w-14 h-14 text-gray-200 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">لا توجد طلبات مطابقة</p>
+          <p className="text-gray-400 text-sm mt-1">جرّب تغيير معايير التصفية</p>
         </div>
       ) : (
         <>
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard title="إجمالي الطلبات المعلقة" value={localList.length}
-              icon={ClipboardDocumentListIcon} colorClass="bg-orange-50 text-orange-500 border-orange-100" loading={loading} />
-            <StatCard title="طلبات عاجلة (+3 أيام)"  value={urgent}
-              icon={ExclamationCircleIcon}     colorClass="bg-red-50 text-red-500 border-red-100"         loading={loading} />
-            <StatCard title="الفئات المتاحة"          value={categories.length}
-              icon={CheckCircleIcon}           colorClass="bg-green-50 text-green-500 border-green-100"   loading={loading} />
-          </div>
+          <Table
+            columns={['الاسم', 'التخصص', 'الخبرة', 'الحالة', 'الإجراءات']}
+            data={formattedWorkers}
+            renderRow={renderRow}
+          />
 
-          {/* Filters row */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            {/* Search */}
-            <div className="relative flex-1 max-w-xs">
-              <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
-              <input type="text" placeholder="بحث بالاسم أو البريد..." value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full border border-gray-200 rounded-full py-2.5 px-5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 shadow-sm" />
-            </div>
+          {/* Pagination */}
+          {pages > 1 && (
+            <div className="flex items-center justify-between pt-4">
+              <p className="text-sm text-gray-500">
+                عرض{' '}
+                <span className="font-semibold text-gray-700">
+                  {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)}
+                </span>{' '}
+                من <span className="font-semibold text-gray-700">{total.toLocaleString('en-US')}</span>
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(1)}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                  title="الصفحة الأولى"
+                >«</button>
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-4 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                >السابق</button>
 
-            {/* Category dropdown (replaces button row) */}
-            <div className="flex items-center gap-2">
-              <AdjustmentsHorizontalIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <select
-                value={activeCategory}
-                onChange={e => setActiveCategory(e.target.value)}
-                className="border border-gray-200 rounded-full px-5 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 shadow-sm cursor-pointer transition-all appearance-none"
-              >
-                <option value="">كل التخصصات</option>
-                {categories.map(cat => (
-                  <option key={cat._id} value={cat.name}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+                {Array.from({ length: pages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === pages || Math.abs(p - page) <= 2)
+                  .reduce((acc, p, idx, arr) => {
+                    if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((item, idx) =>
+                    item === '...' ? (
+                      <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 text-sm">…</span>
+                    ) : (
+                      <button
+                        key={item}
+                        onClick={() => setPage(item)}
+                        className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                          item === page
+                            ? 'bg-orange-500 text-white border-orange-500 font-bold shadow-sm'
+                            : 'border-gray-200 hover:bg-gray-50 text-gray-700'
+                        }`}
+                      >{item}</button>
+                    )
+                  )
+                }
 
-          {/* Table */}
-          {filtered.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
-              <ClipboardDocumentListIcon className="w-14 h-14 text-gray-200 mx-auto mb-3" />
-              <p className="text-gray-500 font-medium">لا توجد طلبات مطابقة</p>
-              <p className="text-gray-400 text-sm mt-1">جرّب تغيير معايير التصفية</p>
+                <button
+                  onClick={() => setPage(p => Math.min(pages, p + 1))}
+                  disabled={page === pages}
+                  className="px-4 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                >التالي</button>
+                <button
+                  onClick={() => setPage(pages)}
+                  disabled={page === pages}
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                  title="الصفحة الأخيرة"
+                >»</button>
+              </div>
             </div>
-          ) : (
-            <Table columns={['الاسم', 'التخصص', 'الخبرة', 'الحالة', 'الإجراءات']} data={filtered} renderRow={renderRow} />
           )}
         </>
       )}
@@ -231,14 +346,16 @@ const TechnicianApprovalsPage = () => {
           <div className="modal-content !max-w-2xl">
             <div className="sticky top-0 bg-slate-50 border-b border-gray-100 p-6 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">تفاصيل الفني</h2>
-              <button onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50">
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50"
+              >
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Profile */}
+              {/* Profile header */}
               <div className="flex items-center gap-4">
                 {selectedTech.profilePicture ? (
                   <img src={selectedTech.profilePicture} alt={selectedTech.name} className="w-20 h-20 rounded-full object-cover shadow" />
@@ -251,11 +368,13 @@ const TechnicianApprovalsPage = () => {
                   <h3 className="text-xl font-bold text-gray-900">{selectedTech.name}</h3>
                   <p className="text-gray-600">{selectedTech.specialty}</p>
                   <p className="text-sm text-gray-500">{selectedTech.email}</p>
-                  {selectedTech.phoneNumber && <p className="text-sm text-gray-500" dir="ltr">{selectedTech.phoneNumber}</p>}
+                  {selectedTech.phoneNumber && (
+                    <p className="text-sm text-gray-500" dir="ltr">{selectedTech.phoneNumber}</p>
+                  )}
                 </div>
               </div>
 
-              {/* Info Grid */}
+              {/* Info grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4">
                   <p className="text-xs text-gray-500 mb-1">سنوات الخبرة</p>
@@ -280,7 +399,7 @@ const TechnicianApprovalsPage = () => {
                 {selectedTech.nationalId && (
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-xs text-gray-500 mb-1">رقم الهوية</p>
-                    <p className="font-semibold text-gray-800">{selectedTech.nationalId}</p>
+                    <p className="font-semibold text-gray-800 truncate">{selectedTech.nationalId}</p>
                   </div>
                 )}
                 {selectedTech.createdAt && (
@@ -309,8 +428,12 @@ const TechnicianApprovalsPage = () => {
                     {selectedTech.certificates.map((cert, i) => (
                       <li key={i} className="flex items-center gap-2">
                         {cert.startsWith('http') ? (
-                          <a href={cert} target="_blank" rel="noopener noreferrer"
-                            className="text-sm text-blue-700 hover:underline flex items-center gap-1">
+                          <a
+                            href={cert}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-700 hover:underline flex items-center gap-1"
+                          >
                             <CheckCircleIcon className="w-4 h-4 text-green-600" />
                             وثيقة {i + 1} — عرض
                           </a>
@@ -330,16 +453,24 @@ const TechnicianApprovalsPage = () => {
 
               {/* Actions */}
               <div className="flex gap-3 pt-4 border-t border-gray-100">
-                <button onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold rounded-xl transition-colors text-sm">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold rounded-xl transition-colors text-sm"
+                >
                   إغلاق
                 </button>
-                <button onClick={() => handleReject(selectedTech)} disabled={approving}
-                  className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm">
+                <button
+                  onClick={() => handleReject(selectedTech)}
+                  disabled={approving}
+                  className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
+                >
                   {approving ? 'جاري...' : 'رفض'}
                 </button>
-                <button onClick={() => handleApprove(selectedTech)} disabled={approving}
-                  className="flex-1 px-4 py-2.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm shadow-sm">
+                <button
+                  onClick={() => handleApprove(selectedTech)}
+                  disabled={approving}
+                  className="flex-1 px-4 py-2.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm shadow-sm"
+                >
                   {approving ? 'جاري...' : 'اعتماد'}
                 </button>
               </div>

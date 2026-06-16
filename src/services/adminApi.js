@@ -4,9 +4,9 @@ import httpClient from './httpClient';
 
 export const workerAPI = {
   // Get all pending workers for approval
-  getPendingWorkers: async () => {
-    // httpClient interceptor unwraps response.data => { success, results, data: [...] }
-    const response = await httpClient.get('/workers/pending-approval');
+  getPendingWorkers: async (params = {}) => {
+    const response = await httpClient.get('/workers/pending-approval', { params });
+    // backend: { success, data: [...], total, pages, page, limit }
     return response || {};
   },
 

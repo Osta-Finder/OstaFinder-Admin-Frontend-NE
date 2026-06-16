@@ -27,6 +27,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 1 minute — prevent constant re-fetching
 
 export const AdminDataProvider = ({ children }) => {
   const [pendingWorkers, setPendingWorkers] = useState([]);
+  const [pendingTotal, setPendingTotal]     = useState(0);
   const [orders, setOrders] = useState([]);
   const [requestStats, setRequestStats] = useState({});
   const [workersTotal, setWorkersTotal] = useState(0); // Total count only — no bulk fetch
@@ -53,17 +54,21 @@ export const AdminDataProvider = ({ children }) => {
         categoriesRes,
         clientsRes
       ] = await Promise.all([
-        workerAPI.getPendingWorkers(),
+        workerAPI.getPendingWorkers({ limit: 1 }), // Only need total count for badge
         requestAPI.getAllRequests(),
         requestAPI.getRequestStats(),
-        workerAPI.getAllWorkers({ limit: 1 }), // Only need total count — no bulk data
+        workerAPI.getAllWorkers({ limit: 1 }),
         categoryAPI.getCategories(),
         userAPI.getAllUsers({ page: 1, limit: 15, role: 'client' }),
       ]);
 
       if (!isMounted.current) return;
 
+      // pendingWorkers kept for backward compat — use total from pagination response
       setPendingWorkers(pendingRes?.data || []);
+      // Use total count from response for the badge/counter
+      const pendingTotal = pendingRes?.total ?? (pendingRes?.data?.length ?? 0);
+      setPendingTotal(pendingTotal);
       setOrders(ordersRes?.data || []);
       
       // Handle requestStats — might be in data property or directly
@@ -97,7 +102,7 @@ export const AdminDataProvider = ({ children }) => {
 
   const value = {
     pendingWorkers,
-    pendingCount: pendingWorkers.length,
+    pendingCount: pendingTotal,
     orders,
     requestStats,
     workersTotal,      // ← total count for display in Reports/Analytics
