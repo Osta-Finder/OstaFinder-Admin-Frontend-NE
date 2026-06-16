@@ -86,7 +86,18 @@ const OrdersPage = () => {
 
       const params = { page, limit: LIMIT };
       if (debouncedSearch.trim()) params.keyword = debouncedSearch.trim();
-      if (statusFilter) params.status = statusFilter;
+      if (statusFilter) {
+        const reverseMap = {
+          معلقة: 'pending',
+          مقبولة: 'accepted',
+          'في الطريق': 'on_the_way',
+          'قيد التنفيذ': 'in_progress',
+          مكتملة: 'completed',
+          مرفوضة: 'rejected',
+          ملغية: 'cancelled',
+        };
+        params.status = reverseMap[statusFilter] || statusFilter;
+      }
 
       const res = await requestAPI.getAllRequests(params);
       if (requestId !== requestIdRef.current) return;
