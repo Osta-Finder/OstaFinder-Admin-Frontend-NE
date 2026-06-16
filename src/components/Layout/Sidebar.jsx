@@ -20,7 +20,6 @@ const navItems = [
   { name: 'التحليلات', icon: ChartBarIcon, path: '/analytics' },
   { name: 'إدارة الطلبات', icon: WrenchScrewdriverIcon, path: '/orders' },
   { name: 'رسائل التواصل', icon: EnvelopeIcon, path: '/contacts' },
-  { name: 'الدعم الفني', icon: ChatBubbleLeftEllipsisIcon, path: '/support' },
 ];
 
 const Sidebar = () => {
