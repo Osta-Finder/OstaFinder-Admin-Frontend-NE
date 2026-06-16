@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useState } from 'react';
 import { 
   XMarkIcon,
   ChartBarIcon,
@@ -8,34 +9,15 @@ import {
 } from '@heroicons/react/24/outline';
 import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
-import { requestAPI, workerAPI } from '../services/adminApi';
+import { useAdminData } from '../store/AdminDataContext';
 
 export default function ReportsPage() {
   const [selectedReport, setSelectedReport] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [liveStats, setLiveStats] = useState(null);
-  const [workersCount, setWorkersCount] = useState(0);
 
-  useEffect(() => {
-    loadLiveData();
-  }, []);
+  // ← Read from shared context — NO independent API calls
+  const { requestStats: liveStats, workersCount, loading, refreshAll } = useAdminData();
 
-  const loadLiveData = async () => {
-    try {
-      setLoading(true);
-      const [stats, workers] = await Promise.all([
-        requestAPI.getRequestStats(),
-        workerAPI.getAllWorkers({ limit: 1000 }),
-      ]);
-      setLiveStats(stats);
-      setWorkersCount(workers?.length || 0);
-    } catch (error) {
-      console.error('Error loading report data:', error);
-      toast.error('فشل تحميل بيانات التقارير');
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const completionRate =
     liveStats && liveStats['الكل'] > 0
@@ -236,7 +218,7 @@ export default function ReportsPage() {
 
       <div className="flex justify-center pt-8">
         <button
-          onClick={loadLiveData}
+          onClick={refreshAll}
           className="flex items-center justify-center gap-2 px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white 
                     font-semibold rounded-full transition-all duration-200 
                     transform hover:scale-105 shadow-md"

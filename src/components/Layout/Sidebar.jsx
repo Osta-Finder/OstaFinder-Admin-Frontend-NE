@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const navItems = [
-  { name: 'لوحة القيادة', icon: Squares2X2Icon, path: '/dashboard' },
+  { name: 'لوحة التحكم', icon: Squares2X2Icon, path: '/dashboard' },
   { name: 'اعتمادات الفنيين', icon: CheckBadgeIcon, path: '/technicians' },
   { name: 'إدارة المستخدمين', icon: UsersIcon, path: '/users' },
   { name: 'التحليلات', icon: ChartBarIcon, path: '/analytics' },
@@ -36,6 +36,7 @@ const Sidebar = () => {
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userAvatar');
     toast.success('تم تسجيل الخروج بنجاح');
     setTimeout(() => {
       navigate('/login');

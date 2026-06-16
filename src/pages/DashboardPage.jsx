@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   UserGroupIcon,
@@ -12,8 +12,9 @@ import {
 import StatsCards from '../components/StatsCards';
 import RevenueChart from '../components/RevenueChart';
 import ServicePopularity from '../components/ServicePopularity';
-import { requestAPI, workerAPI } from '../services/adminApi';
+import { useAdminData } from '../store/AdminDataContext';
 
+// ─── Quick Action Button ──────────────────────────────────────────────────────
 const QuickAction = ({ icon: Icon, label, color, onClick }) => (
   <button
     onClick={onClick}
@@ -24,47 +25,25 @@ const QuickAction = ({ icon: Icon, label, color, onClick }) => (
   </button>
 );
 
+// ─── Status colour map ────────────────────────────────────────────────────────
+const statusColor = {
+  'معلقة':       'bg-yellow-100 text-yellow-700',
+  'مقبولة':      'bg-blue-100 text-blue-700',
+  'قيد التنفيذ': 'bg-purple-100 text-purple-700',
+  'مكتملة':      'bg-green-100 text-green-700',
+  'مرفوضة':      'bg-red-100 text-red-700',
+  'ملغية':       'bg-gray-100 text-gray-600',
+};
+
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [allOrders, setAllOrders] = useState([]);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [loadingOrders, setLoadingOrders] = useState(true);
+  // ← Data comes from shared context — NO extra API calls from this page
+  const { orders, pendingCount, loading: loadingOrders } = useAdminData();
+
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'صباح الخير' : hour < 17 ? 'مساء الخير' : 'مساء النور';
-
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      setLoadingOrders(true);
-      const [orders, pendingRes] = await Promise.all([
-        requestAPI.getAllRequests(),
-        workerAPI.getPendingWorkers(),
-      ]);
-      setAllOrders(orders);
-      // أحدث 5 طلبات
-      setRecentOrders(orders.slice(0, 5));
-      const pending = Array.isArray(pendingRes) ? pendingRes : (pendingRes?.data || []);
-      setPendingCount(pending.length);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
-
-  const statusColor = {
-    'معلقة':      'bg-yellow-100 text-yellow-700',
-    'مقبولة':     'bg-blue-100 text-blue-700',
-    'قيد التنفيذ':'bg-purple-100 text-purple-700',
-    'مكتملة':     'bg-green-100 text-green-700',
-    'مرفوضة':     'bg-red-100 text-red-700',
-    'ملغية':      'bg-gray-100 text-gray-600',
-  };
+  const recentOrders = orders.slice(0, 5);
 
   return (
     <div className="space-y-8">
@@ -72,13 +51,16 @@ export default function DashboardPage() {
       {/* ====== Welcome Banner ====== */}
       <div className="relative overflow-hidden bg-gradient-to-l from-orange-500 to-orange-600 rounded-3xl p-6 lg:p-8 text-white shadow-lg">
         <div className="relative z-10">
-          <p className="text-orange-100 text-sm font-medium mb-1 flex items-center gap-1">{greeting} <SparklesIcon className="w-4 h-4 text-orange-200" /></p>
+          <p className="text-orange-100 text-sm font-medium mb-1 flex items-center gap-1">
+            {greeting} <SparklesIcon className="w-4 h-4 text-orange-200" />
+          </p>
           <h1 className="text-2xl lg:text-3xl font-bold mb-1">
             {user?.name || 'المدير'}
           </h1>
           <p className="text-orange-100 text-sm">
-            {new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
+          <p className="text-orange-200 text-xs mt-1">العريش، مصر 🇪🇬</p>
           {pendingCount > 0 && (
             <div className="mt-4 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-semibold">
               <BellAlertIcon className="w-4 h-4" />
@@ -92,7 +74,7 @@ export default function DashboardPage() {
         <div className="absolute left-32 -top-4 w-16 h-16 bg-white/10 rounded-full" />
       </div>
 
-      {/* ====== Stats Cards ====== */}
+      {/* ====== Stats Cards (use context data internally) ====== */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold text-gray-800">المقاييس الرئيسية</h2>
         <StatsCards />
@@ -102,30 +84,10 @@ export default function DashboardPage() {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold text-gray-800">إجراءات سريعة</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <QuickAction
-            icon={UserGroupIcon}
-            label="اعتماد الفنيين"
-            color="hover:border-orange-300"
-            onClick={() => navigate('/technicians')}
-          />
-          <QuickAction
-            icon={ClipboardDocumentListIcon}
-            label="إدارة الطلبات"
-            color="hover:border-blue-300"
-            onClick={() => navigate('/orders')}
-          />
-          <QuickAction
-            icon={ArrowTrendingUpIcon}
-            label="التحليلات"
-            color="hover:border-green-300"
-            onClick={() => navigate('/analytics')}
-          />
-          <QuickAction
-            icon={UserGroupIcon}
-            label="إدارة المستخدمين"
-            color="hover:border-purple-300"
-            onClick={() => navigate('/users')}
-          />
+          <QuickAction icon={UserGroupIcon}           label="اعتماد الفنيين"   color="hover:border-orange-300" onClick={() => navigate('/technicians')} />
+          <QuickAction icon={ClipboardDocumentListIcon} label="إدارة الطلبات"  color="hover:border-blue-300"   onClick={() => navigate('/orders')} />
+          <QuickAction icon={ArrowTrendingUpIcon}     label="التحليلات"        color="hover:border-green-300"  onClick={() => navigate('/analytics')} />
+          <QuickAction icon={UserGroupIcon}           label="إدارة المستخدمين" color="hover:border-purple-300" onClick={() => navigate('/users')} />
         </div>
       </section>
 
@@ -134,10 +96,10 @@ export default function DashboardPage() {
         <h2 className="text-xl font-semibold text-gray-800">الأداء والتحليلات</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <RevenueChart orders={allOrders} loading={loadingOrders} />
+            <RevenueChart orders={orders} loading={loadingOrders} />
           </div>
           <div className="lg:col-span-1">
-            <ServicePopularity orders={allOrders} loading={loadingOrders} />
+            <ServicePopularity orders={orders} loading={loadingOrders} />
           </div>
         </div>
       </section>
@@ -158,7 +120,7 @@ export default function DashboardPage() {
           {loadingOrders ? (
             <div className="p-8 text-center">
               <div className="flex justify-center gap-1 mb-3">
-                {[0,1,2].map(i => (
+                {[0, 1, 2].map((i) => (
                   <div key={i} className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
                 ))}
               </div>
@@ -194,7 +156,7 @@ export default function DashboardPage() {
                       {order.status || 'معلقة'}
                     </span>
                     <span className="text-xs text-gray-400">
-                      {order.date ? new Date(order.date).toLocaleDateString('ar-SA') : '—'}
+                      {order.date ? new Date(order.date).toLocaleDateString('en-US') : '—'}
                     </span>
                   </div>
                 </div>
@@ -218,9 +180,7 @@ export default function DashboardPage() {
               <p className="font-bold text-orange-800">
                 {pendingCount} طلب اعتماد فني بانتظار المراجعة
               </p>
-              <p className="text-sm text-orange-600">
-                اضغط هنا للانتقال لصفحة اعتماد الفنيين
-              </p>
+              <p className="text-sm text-orange-600">اضغط هنا للانتقال لصفحة اعتماد الفنيين</p>
             </div>
             <div className="mr-auto text-orange-400 text-xl">←</div>
           </div>

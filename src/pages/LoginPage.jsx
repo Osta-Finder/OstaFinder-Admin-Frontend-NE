@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { authAPI } from '../services/adminApi';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
@@ -22,13 +23,11 @@ export default function LoginPage() {
       if (response && response.user) {
         // Backend uses httpOnly cookies, so we just store user data
         const userData = response.user;
-        // Restore previously saved avatar if exists
-        const savedAvatar = localStorage.getItem('userAvatar');
-        if (savedAvatar) {
-          userData.avatar = savedAvatar;
-        }
+        // مسح الـ avatar القديم عشان ميظهرش لأدمن جديد
+        localStorage.removeItem('userAvatar');
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('isLoggedIn', 'true');
+        window.dispatchEvent(new Event('userUpdated')); // sync Header avatar
         toast.success('تم تسجيل الدخول بنجاح');
         setTimeout(() => {
           navigate('/dashboard');
@@ -86,13 +85,24 @@ export default function LoginPage() {
               <div className="relative">
                 <LockClosedIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 pr-10 text-right focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-transparent"
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 pr-10 pl-10 text-right focus:outline-none focus:ring-2 focus:ring-[#D97706]/50 focus:border-transparent"
                   placeholder="أدخل كلمة المرور"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="w-5 h-5" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5" />
+                  )}
+                </button>
               </div>
             </div>
 
@@ -105,14 +115,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600 text-sm">
-              ليس لديك حساب؟{' '}
-              <Link to="/register" className="text-[#D97706] hover:text-[#B45309] font-bold">
-                إنشاء حساب جديد
-              </Link>
-            </p>
-          </div>
+
         </div>
       </div>
     </div>

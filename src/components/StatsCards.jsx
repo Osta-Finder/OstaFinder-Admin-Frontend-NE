@@ -1,74 +1,72 @@
-import React, { useState, useEffect } from 'react';
-import { requestAPI, workerAPI } from '../services/adminApi';
-import { 
-  ArchiveBoxIcon, 
-  CurrencyDollarIcon, 
+import React from 'react';
+import { useAdminData } from '../store/AdminDataContext';
+import {
+  ArchiveBoxIcon,
+  CurrencyDollarIcon,
   UserGroupIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
+// Egyptian Pound formatter — بتعرض الأرقام إنجليزي مع ج.م
+const formatEGP = (value) =>
+  `${Number(value).toLocaleString('en-US')} ج.م`;
+
 const StatsCards = () => {
-  const [stats, setStats] = useState([
-    { label: 'إجمالي الطلبات', value: '...', change: '...', icon: <ArchiveBoxIcon className="w-7 h-7" /> },
-    { label: 'الإيرادات الشهرية', value: '...', change: '...', icon: <CurrencyDollarIcon className="w-7 h-7" /> },
-    { label: 'عدد الفنيين', value: '...', change: '...', icon: <UserGroupIcon className="w-7 h-7" /> },
-  ]);
-  const [loading, setLoading] = useState(true);
+  // Use shared context — no independent API call from this component
+  const { orders, pendingWorkers, pendingCount, requestStats, loading } = useAdminData();
 
-  useEffect(() => {
-    loadStats();
-  }, []);
+  const totalRequests    = requestStats?.الكل       || orders.length || 0;
+  const completedRequests = requestStats?.مكتملة    || 0;
+  const completionRate   = totalRequests > 0
+    ? Math.round((completedRequests / totalRequests) * 100)
+    : 0;
 
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const requestStats = await requestAPI.getRequestStats();
-      const workersRes = await workerAPI.getAllWorkers({ limit: 1000 });
-      const workers = Array.isArray(workersRes) ? workersRes : (workersRes?.data || []);
-      
-      // requestAPI.getRequestStats() returns response.data = { الكل, معلقة, ... }
-      const totalRequests = requestStats?.الكل || 0;
-      const completedRequests = requestStats?.مكتملة || 0;
-      const completionRate = totalRequests > 0 ? Math.round((completedRequests / totalRequests) * 100) : 0;
+  // Estimate revenue: completed orders × assumed average price (150 EGP)
+  // Replace 150 with a real price field from your orders when available
+  const avgOrderPrice = 150;
+  const estimatedRevenue = completedRequests * avgOrderPrice;
 
-      setStats([
-        {
-          label: 'إجمالي الطلبات',
-          value: totalRequests.toLocaleString('ar-SA'),
-          change: `+${Math.floor(Math.random() * 30) + 10}%`,
-          icon: <ArchiveBoxIcon className="w-7 h-7" />,
-          bgColor: 'bg-orange-50',
-          borderColor: 'border-orange-100',
-          textColor: 'text-orange-600',
-        },
-        {
-          label: 'معدل الإكمال',
-          value: `${completionRate}%`,
-          change: `من ${totalRequests} طلب`,
-          icon: <CheckCircleIcon className="w-7 h-7" />,
-          bgColor: 'bg-orange-50',
-          borderColor: 'border-orange-100',
-          textColor: 'text-orange-500',
-        },
-        {
-          label: 'عدد الفنيين',
-          value: (workers?.length || 0).toLocaleString('ar-SA'),
-          change: `+${Math.floor(Math.random() * 15) + 5}%`,
-          icon: <UserGroupIcon className="w-7 h-7" />,
-          bgColor: 'bg-orange-50',
-          borderColor: 'border-orange-100',
-          textColor: 'text-orange-400',
-        },
-      ]);
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const stats = [
+    {
+      label:       'إجمالي الطلبات',
+      value:       totalRequests.toLocaleString('en-US'),
+      change:      `${completedRequests} مكتمل`,
+      icon:        <ArchiveBoxIcon className="w-7 h-7" />,
+      bgColor:     'bg-orange-50',
+      borderColor: 'border-orange-100',
+      textColor:   'text-orange-600',
+    },
+    {
+      label:       'معدل الإكمال',
+      value:       `${completionRate}%`,
+      change:      `من ${totalRequests.toLocaleString('en-US')} طلب`,
+      icon:        <CheckCircleIcon className="w-7 h-7" />,
+      bgColor:     'bg-green-50',
+      borderColor: 'border-green-100',
+      textColor:   'text-green-600',
+    },
+    {
+      label:       'الإيرادات التقديرية',
+      value:       formatEGP(estimatedRevenue),
+      change:      '',
+      icon:        <CurrencyDollarIcon className="w-7 h-7" />,
+      bgColor:     'bg-blue-50',
+      borderColor: 'border-blue-100',
+      textColor:   'text-blue-600',
+    },
+    {
+      label:       'عدد الفنيين',
+      value:       pendingCount.toLocaleString('en-US'),
+      change:      'بانتظار الاعتماد',
+      icon:        <UserGroupIcon className="w-7 h-7" />,
+      bgColor:     'bg-orange-50',
+      borderColor: 'border-orange-100',
+      textColor:   'text-orange-500',
+    },
+  ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {stats.map((stat, index) => (
         <div
           key={index}
@@ -78,19 +76,21 @@ const StatsCards = () => {
             <div className={`w-14 h-14 rounded-2xl ${stat.bgColor} ${stat.textColor} flex items-center justify-center text-3xl shadow-sm border ${stat.borderColor} group-hover:scale-110 transition-transform duration-300`}>
               {stat.icon}
             </div>
-            <span
-              className={`${stat.textColor} ${stat.bgColor} text-xs font-bold px-3 py-1.5 rounded-full border ${stat.borderColor}`}
-            >
-              {stat.change}
-            </span>
+            {stat.change && (
+              <span className={`${stat.textColor} ${stat.bgColor} text-xs font-bold px-3 py-1.5 rounded-full border ${stat.borderColor} text-right max-w-[120px] leading-tight`}>
+                {stat.change}
+              </span>
+            )}
           </div>
 
           <p className="text-gray-500 text-sm font-semibold mb-1 text-right">
             {stat.label}
           </p>
 
-          <h3 className="text-3xl lg:text-4xl font-black text-gray-900 text-right tracking-tight">
-            {loading ? '...' : stat.value}
+          <h3 className="text-2xl lg:text-3xl font-black text-gray-900 text-right tracking-tight">
+            {loading ? (
+              <span className="inline-block w-16 h-7 bg-gray-100 animate-pulse rounded-lg" />
+            ) : stat.value}
           </h3>
 
           <div className={`absolute bottom-0 right-0 h-1 w-0 group-hover:w-full transition-all duration-500 bg-gradient-to-l from-transparent to-current opacity-20 ${stat.textColor}`} />
