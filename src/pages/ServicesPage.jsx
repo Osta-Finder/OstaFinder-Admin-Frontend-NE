@@ -121,16 +121,14 @@ export default function ServicesPage() {
   };
 
   const handleDeleteService = async (serviceId) => {
-    if (confirm('هل أنت متأكد من حذف هذه الخدمة؟')) {
-      try {
-        await categoryAPI.deleteCategory(serviceId);
-        setSelectedService(null);
-        toast.success('تم حذف الخدمة بنجاح');
-        refreshAll();
-      } catch (error) {
-        console.error('Error deleting service:', error);
-        toast.error('فشل حذف الخدمة');
-      }
+    try {
+      await categoryAPI.deleteCategory(serviceId);
+      setSelectedService(null);
+      toast.success('تم حذف الخدمة بنجاح');
+      refreshAll();
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      toast.error('فشل حذف الخدمة');
     }
   };
 

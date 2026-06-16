@@ -206,7 +206,13 @@ const TechnicianApprovalsPage = () => {
     </>
   );
 
-  const formattedWorkers = workers.map(fmt);
+  const filteredWorkers = workers.filter(worker => {
+    if (!activeCategory) return true;
+    const catId = worker.category?._id || worker.category;
+    return catId === activeCategory;
+  });
+
+  const formattedWorkers = filteredWorkers.map(fmt);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -259,7 +265,10 @@ const TechnicianApprovalsPage = () => {
           <AdjustmentsHorizontalIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
           <select
             value={activeCategory}
-            onChange={e => setActiveCategory(e.target.value)}
+            onChange={e => {
+              setActiveCategory(e.target.value);
+              setPage(1);
+            }}
             className="border border-gray-200 rounded-full px-5 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 shadow-sm cursor-pointer appearance-none"
           >
             <option value="">كل التخصصات</option>

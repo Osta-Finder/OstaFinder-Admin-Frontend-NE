@@ -60,7 +60,6 @@ const DetailModal = ({ contact, onClose, onMarkRead, onDeleted }) => {
   };
 
   const handleDelete = async () => {
-    if (!confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
     try {
       setLoading(true);
       await contactAPI.deleteContact(contact._id);
@@ -184,7 +183,6 @@ const ContactMessagesPage = () => {
   useEffect(() => { setPage(1); }, [searchTerm, typeFilter, readFilter]);
 
   const handleDelete = async (id) => {
-    if (!confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
     try {
       await contactAPI.deleteContact(id);
       toast.success('تم حذف الرسالة بنجاح');

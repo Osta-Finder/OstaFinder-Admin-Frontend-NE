@@ -158,7 +158,6 @@ const OrdersPage = () => {
 
   // ── Cancel (delete) order ──────────────────────────────────────────────────
   const handleCancel = async (orderId) => {
-    if (!confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) return;
     try {
       setDeletingId(orderId);
       await requestAPI.cancelRequest(orderId);

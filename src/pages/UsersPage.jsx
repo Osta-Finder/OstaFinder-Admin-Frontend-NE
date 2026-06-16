@@ -266,7 +266,6 @@ const UsersPage = () => {
       toast.info('إدارة حسابات الفنيين تتم من صفحة اعتماد الفنيين');
       return;
     }
-    if (!confirm(`هل أنت متأكد من حذف المستخدم "${userName}"؟`)) return;
     try {
       setDeletingId(userId);
       await userAPI.deleteUser(userId);
