@@ -7,32 +7,33 @@ export const workerAPI = {
   getPendingWorkers: async () => {
     // httpClient interceptor unwraps response.data => { success, results, data: [...] }
     const response = await httpClient.get('/workers/pending-approval');
-    return response.data || [];
+    return response || {};
   },
 
   // Approve or reject a worker
   updateWorkerApproval: async (workerId, status) => {
     const response = await httpClient.patch(`/workers/${workerId}/approval`, { status });
-    return response.data;
+    return response;
   },
 
   // Get all workers (with pagination/filtering) for Admin
   getAllWorkers: async (params = {}) => {
     const response = await httpClient.get('/workers/admin', { params });
-    // backend: { success, total, pages, page, limit, data: [...] }
-    return response.data || [];
+    // httpClient interceptor already unwraps response.data => { success, total, pages, page, limit, data: [...] }
+    // response here = { success, total, pages, page, limit, data: [...] }
+    return response || {};
   },
 
   // Get top workers by category
   getTopWorkersByCategory: async () => {
     const response = await httpClient.get('/workers/top-by-category');
-    return response.data || [];
+    return response || {};
   },
 
   // Get current worker profile
   getWorkerProfile: async () => {
     const response = await httpClient.get('/workers/profile');
-    return response.data;
+    return response;
   },
 };
 
@@ -43,39 +44,39 @@ export const requestAPI = {
   getAllRequests: async (params = {}) => {
     const response = await httpClient.get('/requests', { params });
     // httpClient interceptor returns response.data => { success, count, data: [...] }
-    // response here = { success, count, data: [...] }, so .data is the array
-    return response.data || [];
+    // response here = { success, count, data: [...] }
+    return response || {};
   },
 
   // Get request statistics (count by status)
   getRequestStats: async (params = {}) => {
     // httpClient interceptor already unwraps response.data => { success, data: {...} }
     const response = await httpClient.get('/requests/stats', { params });
-    return response.data || {};
+    return response || {};
   },
 
   // Get single request by ID
   getRequestById: async (requestId) => {
     const response = await httpClient.get(`/requests/${requestId}`);
-    return response.data;
+    return response;
   },
 
   // Update request status
   updateRequestStatus: async (requestId, status) => {
     const response = await httpClient.patch(`/requests/${requestId}/status`, { status });
-    return response.data;
+    return response;
   },
 
   // Cancel a request
   cancelRequest: async (requestId) => {
     const response = await httpClient.patch(`/requests/${requestId}/cancel`);
-    return response.data;
+    return response;
   },
 
   // Get worker's own requests
   getMyWorkerRequests: async () => {
     const response = await httpClient.get('/requests/my-worker');
-    return response.data || [];
+    return response || {};
   },
 };
 
@@ -85,31 +86,31 @@ export const categoryAPI = {
   // Get all categories
   getCategories: async () => {
     const response = await httpClient.get('/categories');
-    return response.data || [];
+    return response || {};
   },
 
   // Get single category
   getCategoryById: async (categoryId) => {
     const response = await httpClient.get(`/categories/${categoryId}`);
-    return response.data;
+    return response;
   },
 
   // Create new category
   createCategory: async (categoryData) => {
     const response = await httpClient.post('/categories', categoryData);
-    return response.data;
+    return response;
   },
 
   // Update category
   updateCategory: async (categoryId, categoryData) => {
     const response = await httpClient.put(`/categories/${categoryId}`, categoryData);
-    return response.data;
+    return response;
   },
 
   // Delete/deactivate category
   deleteCategory: async (categoryId) => {
     const response = await httpClient.delete(`/categories/${categoryId}`);
-    return response.data;
+    return response;
   },
 };
 
@@ -118,19 +119,19 @@ export const categoryAPI = {
 export const ratingAPI = {
   createRating: async (requestId, ratingData) => {
     const response = await httpClient.post(`/requests/${requestId}/rating`, ratingData);
-    return response.data;
+    return response;
   },
   getRating: async (requestId) => {
     const response = await httpClient.get(`/requests/${requestId}/rating`);
-    return response.data;
+    return response;
   },
   updateRating: async (requestId, ratingData) => {
     const response = await httpClient.patch(`/requests/${requestId}/rating`, ratingData);
-    return response.data;
+    return response;
   },
   deleteRating: async (requestId) => {
     const response = await httpClient.delete(`/requests/${requestId}/rating`);
-    return response.data;
+    return response;
   },
 };
 
@@ -186,13 +187,13 @@ export const userAPI = {
   getAllUsers: async (params = {}) => {
     const response = await httpClient.get('/users', { params });
     // backend: { success, total, page, pages, data: [...] }
-    return response;
+    return response || {};
   },
 
   // Get single user
   getUserById: async (userId) => {
     const response = await httpClient.get(`/users/${userId}`);
-    return response.data;
+    return response;
   },
 
   // Create new user
@@ -213,7 +214,7 @@ export const userAPI = {
 export const orderAPI = {
   createOrder: async (workerId, orderData) => {
     const response = await httpClient.post(`/orders/${workerId}`, orderData);
-    return response.data;
+    return response;
   },
 };
 
@@ -224,11 +225,11 @@ export const uploadAPI = {
     const response = await httpClient.post('/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    return response.data;
+    return response;
   },
   deleteFile: async (imageId) => {
     const response = await httpClient.post('/upload/delete', { imageId });
-    return response.data;
+    return response;
   },
 };
 

@@ -1,11 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  users: [
-    { id: 'USR-001', name: 'أحمد محمود', email: 'ahmed@example.com', role: 'عميل', status: 'نشط', date: '10 أكتوبر 2023' },
-    { id: 'USR-002', name: 'سارة إبراهيم', email: 'sara@example.com', role: 'مسؤول', status: 'نشط', date: '11 أكتوبر 2023' },
-    { id: 'USR-003', name: 'كريم حسن', email: 'karim@example.com', role: 'عميل', status: 'محظور', date: '12 أكتوبر 2023' },
-  ],
+  users: [],
 };
 
 const usersSlice = createSlice({

@@ -196,7 +196,7 @@ const UsersPage = () => {
         
         if (requestId !== requestIdRef.current) return; // Cancelled by newer request
 
-        // /workers/admin returns: { success, data, total, pages, page, limit }
+        // httpClient interceptor returns response.data => { success, data, total, pages, page, limit }
         setUsers(res.data || []);
         setTotal(res.total || 0);
         setPages(res.pages || 1);
@@ -219,11 +219,11 @@ const UsersPage = () => {
         
         if (requestId !== requestIdRef.current) return; // Cancelled by newer request
         
+        // res from httpClient interceptor = { success, total, page, pages, data: [...] }
         setUsers(res.data || []);
-        const totalCount = res.total || res.results || 0;
-        setTotal(totalCount);
-        setPages(res.pages || res.totalPages || Math.ceil(totalCount / LIMIT) || 1);
-        if (res.page || res.currentPage) setPage(res.page || res.currentPage);
+        setTotal(res.total || 0);
+        setPages(res.pages || 1);
+        if (res.page !== undefined) setPage(res.page);
       }
     } catch (err) {
       if (requestId !== requestIdRef.current) return; // Ignore stale error

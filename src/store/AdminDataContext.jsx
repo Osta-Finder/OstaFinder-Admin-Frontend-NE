@@ -63,15 +63,18 @@ export const AdminDataProvider = ({ children }) => {
 
       if (!isMounted.current) return;
 
-      setPendingWorkers(Array.isArray(pendingRes) ? pendingRes : (pendingRes?.data || []));
-      setOrders(Array.isArray(ordersRes) ? ordersRes : (ordersRes?.data || []));
-      setRequestStats(statsRes || {});
+      setPendingWorkers(pendingRes?.data || []);
+      setOrders(ordersRes?.data || []);
+      
+      // Handle requestStats — might be in data property or directly
+      const statsData = statsRes?.data || statsRes || {};
+      setRequestStats(statsData);
 
       // Read total from backend response — never load full worker list in context
-      const total = workersCountRes?.total ?? 0;
+      const total = workersCountRes?.total ?? workersCountRes?.data?.[0]?.total ?? 0;
       setWorkersTotal(total);
 
-      setCategories(Array.isArray(categoriesRes) ? categoriesRes : (categoriesRes?.data || []));
+      setCategories(categoriesRes?.data || []);
       setClientsData({
         data: clientsRes?.data || [],
         total: clientsRes?.total || 0,
