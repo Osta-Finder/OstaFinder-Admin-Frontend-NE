@@ -402,7 +402,7 @@ const UsersPage = () => {
           />
 
           {/* Pagination */}
-          {pages > 1 && (
+          {total > 0 && (
             <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-gray-500">
                 عرض <span className="font-semibold text-gray-700">{(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)}</span> من <span className="font-semibold text-gray-700">{total.toLocaleString('en-US')}</span>

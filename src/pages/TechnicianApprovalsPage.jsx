@@ -39,7 +39,8 @@ const TechnicianApprovalsPage = () => {
   const [total, setTotal]               = useState(0);
   const [page, setPage]                 = useState(1);
   const [pages, setPages]               = useState(1);
-  const [loading, setLoading]           = useState(true);
+  const [loading, setLoading]           = useState(true);   // أول تحميل فقط
+  const [fetching, setFetching]         = useState(false);  // تغيير الصفحة/بحث
   const [searchTerm, setSearchTerm]     = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeCategory, setActiveCategory]   = useState('');
@@ -66,8 +67,11 @@ const TechnicianApprovalsPage = () => {
   // ── Fetch from Backend ─────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     const requestId = ++requestIdRef.current;
+    const isFirstLoad = workers.length === 0;
     try {
-      setLoading(true);
+      if (isFirstLoad) setLoading(true);
+      else setFetching(true);
+
       const params = { page, limit: LIMIT };
       if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       if (activeCategory) params.category = activeCategory;
@@ -75,7 +79,6 @@ const TechnicianApprovalsPage = () => {
       const res = await workerAPI.getPendingWorkers(params);
       if (requestId !== requestIdRef.current) return;
 
-      // res = { success, data: [...], total, pages, page, limit }
       setWorkers(res.data || []);
       setTotal(res.total || 0);
       setPages(res.pages || 1);
@@ -84,7 +87,10 @@ const TechnicianApprovalsPage = () => {
       console.error('Error loading pending workers:', err);
       toast.error('فشل تحميل طلبات الاعتماد');
     } finally {
-      if (requestId === requestIdRef.current) setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setFetching(false);
+      }
     }
   }, [page, debouncedSearch, activeCategory]);
 
@@ -269,7 +275,14 @@ const TechnicianApprovalsPage = () => {
           <p className="text-gray-400 text-sm mt-1">جرّب تغيير معايير التصفية</p>
         </div>
       ) : (
-        <>
+        <div className="relative">
+          {/* overlay خفيف عند تغيير الصفحة بدون إخفاء الجدول */}
+          {fetching && (
+            <div className="absolute inset-0 bg-white/60 rounded-3xl z-10 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-orange-400/30 border-t-orange-500 rounded-full animate-spin" />
+            </div>
+          )}
+
           <Table
             columns={['الاسم', 'التخصص', 'الخبرة', 'الحالة', 'الإجراءات']}
             data={formattedWorkers}
@@ -277,7 +290,7 @@ const TechnicianApprovalsPage = () => {
           />
 
           {/* Pagination */}
-          {pages > 1 && (
+          {total > 0 && (
             <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-gray-500">
                 عرض{' '}
@@ -289,13 +302,13 @@ const TechnicianApprovalsPage = () => {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setPage(1)}
-                  disabled={page === 1}
+                  disabled={page === 1 || fetching}
                   className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
                   title="الصفحة الأولى"
                 >«</button>
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
+                  disabled={page === 1 || fetching}
                   className="px-4 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
                 >السابق</button>
 
@@ -313,7 +326,8 @@ const TechnicianApprovalsPage = () => {
                       <button
                         key={item}
                         onClick={() => setPage(item)}
-                        className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                        disabled={fetching}
+                        className={`px-3 py-1.5 rounded-lg text-sm border transition-colors disabled:opacity-60 ${
                           item === page
                             ? 'bg-orange-500 text-white border-orange-500 font-bold shadow-sm'
                             : 'border-gray-200 hover:bg-gray-50 text-gray-700'
@@ -325,19 +339,19 @@ const TechnicianApprovalsPage = () => {
 
                 <button
                   onClick={() => setPage(p => Math.min(pages, p + 1))}
-                  disabled={page === pages}
+                  disabled={page === pages || fetching}
                   className="px-4 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
                 >التالي</button>
                 <button
                   onClick={() => setPage(pages)}
-                  disabled={page === pages}
+                  disabled={page === pages || fetching}
                   className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
                   title="الصفحة الأخيرة"
                 >»</button>
               </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* Detail Modal */}
