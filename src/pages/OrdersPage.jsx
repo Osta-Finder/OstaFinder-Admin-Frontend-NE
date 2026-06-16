@@ -184,16 +184,14 @@ const OrdersPage = () => {
           >
             <EyeIcon className="w-5 h-5" />
           </button>
-          {order.status === 'معلقة' && (
-            <button
-              onClick={() => handleCancel(order._id)}
-              disabled={deletingId === order._id}
-              className="text-gray-400 hover:text-red-500 disabled:opacity-40 transition-colors"
-              title="إلغاء الطلب"
-            >
-              <TrashIcon className="w-5 h-5" />
-            </button>
-          )}
+          <button
+            onClick={() => handleCancel(order._id)}
+            disabled={deletingId === order._id}
+            className="text-gray-400 hover:text-red-500 disabled:opacity-40 transition-colors"
+            title="إلغاء الطلب"
+          >
+            <TrashIcon className="w-5 h-5" />
+          </button>
         </div>
       </td>
     </>
