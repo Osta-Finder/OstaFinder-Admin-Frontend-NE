@@ -188,7 +188,7 @@ const UsersPage = () => {
         setPage(1);
         setDebouncedSearch(searchTerm);
       }
-    }, 500);
+    }, 1500);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]); // intentionally omit debouncedSearch to avoid loop
