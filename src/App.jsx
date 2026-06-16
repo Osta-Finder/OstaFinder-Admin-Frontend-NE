@@ -16,6 +16,7 @@ import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
+import ContactMessagesPage from './pages/ContactMessagesPage';
 
 const ProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn');
@@ -52,6 +53,7 @@ function App() {
             <Route path="services" element={<ServicesPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="contacts" element={<ContactMessagesPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

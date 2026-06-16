@@ -9,7 +9,8 @@ import {
   WrenchScrewdriverIcon,
   ArrowRightOnRectangleIcon,
   PlusIcon,
-  ChatBubbleLeftEllipsisIcon
+  ChatBubbleLeftEllipsisIcon,
+  EnvelopeIcon
 } from '@heroicons/react/24/outline';
 
 const navItems = [
@@ -18,7 +19,7 @@ const navItems = [
   { name: 'إدارة المستخدمين', icon: UsersIcon, path: '/users' },
   { name: 'التحليلات', icon: ChartBarIcon, path: '/analytics' },
   { name: 'إدارة الطلبات', icon: WrenchScrewdriverIcon, path: '/orders' },
-  // { name: 'الدعم الفني', icon: ChatBubbleLeftEllipsisIcon, path: '/support' },
+  { name: 'رسائل التواصل', icon: EnvelopeIcon, path: '/contacts' },
 ];
 
 const Sidebar = () => {
