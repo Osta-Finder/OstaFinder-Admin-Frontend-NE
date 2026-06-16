@@ -10,10 +10,11 @@
  *   - pendingWorkers / pendingCount  ← /workers/pending-approval
  *   - orders                         ← /requests
  *   - requestStats                   ← /requests/stats
- *   - workers (all)                  ← /workers  (for Reports/Analytics)
+ *   - workersTotal                   ← /workers/admin (total count only, limit=1)
+ *   - clientsData                    ← /users (page 1 cache)
  *
  * Usage:
- *   const { pendingWorkers, orders, requestStats, workers, loading, refreshAll } = useAdminData();
+ *   const { pendingWorkers, orders, requestStats, workersTotal, loading, refreshAll } = useAdminData();
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -28,7 +29,7 @@ export const AdminDataProvider = ({ children }) => {
   const [pendingWorkers, setPendingWorkers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [requestStats, setRequestStats] = useState({});
-  const [workers, setWorkers] = useState([]);
+  const [workersTotal, setWorkersTotal] = useState(0); // Total count only — no bulk fetch
   const [categories, setCategories] = useState([]);
   const [clientsData, setClientsData] = useState({ data: [], total: 0, pages: 1 });
   const [loading, setLoading] = useState(true);
@@ -44,19 +45,18 @@ export const AdminDataProvider = ({ children }) => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     try {
-      // Import userAPI and categoryAPI from adminApi if not already (we'll ensure they are)
       const [
         pendingRes,
         ordersRes,
         statsRes,
-        workersRes,
+        workersCountRes,
         categoriesRes,
         clientsRes
       ] = await Promise.all([
         workerAPI.getPendingWorkers(),
         requestAPI.getAllRequests(),
         requestAPI.getRequestStats(),
-        workerAPI.getAllWorkers({ limit: 1 }), // We only need total count here, avoid massive queries
+        workerAPI.getAllWorkers({ limit: 1 }), // Only need total count — no bulk data
         categoryAPI.getCategories(),
         userAPI.getAllUsers({ page: 1, limit: 15, role: 'client' }),
       ]);
@@ -66,15 +66,10 @@ export const AdminDataProvider = ({ children }) => {
       setPendingWorkers(Array.isArray(pendingRes) ? pendingRes : (pendingRes?.data || []));
       setOrders(Array.isArray(ordersRes) ? ordersRes : (ordersRes?.data || []));
       setRequestStats(statsRes || {});
-      
-      const count = workersRes?.total ?? (Array.isArray(workersRes) ? workersRes.length : (workersRes?.data?.length || 0));
-      // Store count inside state or a ref. Since it's primitive, we can just create a state for it at the top,
-      // but let's just make `workers` a proper empty array or whatever is needed, and we'll export the accurate count.
-      // Wait, we need to declare workersCount state if we don't have it.
-      // But we can just use `workers` state to hold a dummy array of length `count` so `workers.length` evaluates correctly!
-      // Example: setWorkers(new Array(count).fill(null))
-      // Yes, `setWorkers(new Array(count).fill(null))` is extremely clean because it doesn't break `workersCount: workers.length` downstream!
-      setWorkers(new Array(count).fill(null));
+
+      // Read total from backend response — never load full worker list in context
+      const total = workersCountRes?.total ?? 0;
+      setWorkersTotal(total);
 
       setCategories(Array.isArray(categoriesRes) ? categoriesRes : (categoriesRes?.data || []));
       setClientsData({
@@ -102,8 +97,8 @@ export const AdminDataProvider = ({ children }) => {
     pendingCount: pendingWorkers.length,
     orders,
     requestStats,
-    workers,
-    workersCount: workers.length,
+    workersTotal,      // ← total count for display in Reports/Analytics
+    workersCount: workersTotal, // alias for backward compat
     categories,
     clientsData,
     loading,

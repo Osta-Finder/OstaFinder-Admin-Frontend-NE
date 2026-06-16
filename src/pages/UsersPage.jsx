@@ -195,18 +195,11 @@ const UsersPage = () => {
         const res = await workerAPI.getAllWorkers(params);
         
         if (requestId !== requestIdRef.current) return; // Cancelled by newer request
-        
-        if (Array.isArray(res)) {
-          setUsers(res);
-          setTotal(res.length);
-          setPages(1);
-        } else {
-          setUsers(res.data || []);
-          const totalCount = res.total || res.results || (res.data?.length ?? 0);
-          setTotal(totalCount);
-          setPages(res.pages || res.totalPages || Math.ceil(totalCount / LIMIT) || 1);
-          if (res.page || res.currentPage) setPage(res.page || res.currentPage);
-        }
+
+        // /workers/admin returns: { success, data, total, pages, page, limit }
+        setUsers(res.data || []);
+        setTotal(res.total || 0);
+        setPages(res.pages || 1);
       } else {
         const roleMap = { clients: 'client', admins: 'admin' };
         
@@ -410,11 +403,19 @@ const UsersPage = () => {
 
           {/* Pagination */}
           {pages > 1 && (
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-gray-500">
-                صفحة {page} من {pages}
+                عرض <span className="font-semibold text-gray-700">{(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)}</span> من <span className="font-semibold text-gray-700">{total.toLocaleString('en-US')}</span>
               </p>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(1)}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                  title="الصفحة الأولى"
+                >
+                  «
+                </button>
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
@@ -422,12 +423,48 @@ const UsersPage = () => {
                 >
                   السابق
                 </button>
+
+                {/* Page number buttons — show up to 5 around current page */}
+                {Array.from({ length: pages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === pages || Math.abs(p - page) <= 2)
+                  .reduce((acc, p, idx, arr) => {
+                    if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((item, idx) =>
+                    item === '...' ? (
+                      <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 text-sm">…</span>
+                    ) : (
+                      <button
+                        key={item}
+                        onClick={() => setPage(item)}
+                        className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                          item === page
+                            ? 'bg-[#A85121] text-white border-[#A85121] font-bold shadow-sm'
+                            : 'border-gray-200 hover:bg-gray-50 text-gray-700'
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    )
+                  )
+                }
+
                 <button
                   onClick={() => setPage((p) => Math.min(pages, p + 1))}
                   disabled={page === pages}
                   className="px-4 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
                 >
                   التالي
+                </button>
+                <button
+                  onClick={() => setPage(pages)}
+                  disabled={page === pages}
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                  title="الصفحة الأخيرة"
+                >
+                  »
                 </button>
               </div>
             </div>
