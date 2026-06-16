@@ -264,7 +264,7 @@ const TechnicianApprovalsPage = () => {
           >
             <option value="">كل التخصصات</option>
             {categories.map(cat => (
-              <option key={cat._id} value={cat.name}>{cat.name}</option>
+              <option key={cat._id} value={cat._id}>{cat.name}</option>
             ))}
           </select>
         </div>
