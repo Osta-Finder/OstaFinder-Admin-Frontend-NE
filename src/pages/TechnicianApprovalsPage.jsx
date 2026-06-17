@@ -35,7 +35,9 @@ const TechnicianApprovalsPage = () => {
   const { categories, refreshAll } = useAdminData();
 
   // ── State ──────────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab]       = useState('technicians'); // 'technicians' | 'portfolios'
   const [workers, setWorkers]           = useState([]);
+  const [portfolios, setPortfolios]     = useState([]);
   const [total, setTotal]               = useState(0);
   const [page, setPage]                 = useState(1);
   const [pages, setPages]               = useState(1);
@@ -46,14 +48,23 @@ const TechnicianApprovalsPage = () => {
   const [activeCategory, setActiveCategory]   = useState('');
   const [showModal, setShowModal]       = useState(false);
   const [selectedTech, setSelectedTech] = useState(null);
+  const [showWorkModal, setShowWorkModal] = useState(false);
+  const [selectedWork, setSelectedWork] = useState(null);
   const [approving, setApproving]       = useState(false);
 
   const requestIdRef = useRef(0);
   // ✅ FIX 3: dedup guard — skip fetch if params haven't actually changed.
   const prevParamsRef = useRef(null);
 
-  // ✅ FIX 2: separate setPage and setDebouncedSearch — nested setState inside a
-  // state-updater function causes an extra render, firing loadData twice.
+  // ── Reset filters on activeTab change ──────────────────────────────────────
+  useEffect(() => {
+    setPage(1);
+    setSearchTerm('');
+    setDebouncedSearch('');
+    setActiveCategory('');
+  }, [activeTab]);
+
+  // ── Debounce search ────────────────────────────────────────────────────────
   useEffect(() => {
     const timer = setTimeout(() => {
       if (debouncedSearch !== searchTerm) {
@@ -74,7 +85,7 @@ const TechnicianApprovalsPage = () => {
     prevParamsRef.current = paramsKey;
 
     const requestId = ++requestIdRef.current;
-    const isFirstLoad = workers.length === 0;
+    const isFirstLoad = activeTab === 'technicians' ? workers.length === 0 : portfolios.length === 0;
     try {
       if (isFirstLoad) setLoading(true);
       else setFetching(true);
@@ -83,15 +94,40 @@ const TechnicianApprovalsPage = () => {
       if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       if (activeCategory) params.category = activeCategory;
 
-      const res = await workerAPI.getPendingWorkers(params);
-      if (requestId !== requestIdRef.current) return;
+      if (activeTab === 'technicians') {
+        const res = await workerAPI.getPendingWorkers(params);
+        if (requestId !== requestIdRef.current) return;
+        setWorkers(res.data || []);
+        setTotal(res.total || 0);
+        setPages(res.pages || 1);
+      } else {
+        const res = await workerAPI.getPendingWorks(params);
+        if (requestId !== requestIdRef.current) return;
+        
+        // Filter by category or search term client-side if needed since API currently doesn't support them on pending works
+        let filteredWorks = res.data || [];
+        if (debouncedSearch.trim()) {
+          const search = debouncedSearch.trim().toLowerCase();
+          filteredWorks = filteredWorks.filter(
+            w =>
+              (w.title && w.title.toLowerCase().includes(search)) ||
+              (w.clientName && w.clientName.toLowerCase().includes(search)) ||
+              (w.worker?.name && w.worker.name.toLowerCase().includes(search))
+          );
+        }
+        if (activeCategory) {
+          filteredWorks = filteredWorks.filter(
+            w => w.category === activeCategory
+          );
+        }
 
-      setWorkers(res.data || []);
-      setTotal(res.total || 0);
-      setPages(res.pages || 1);
+        setPortfolios(filteredWorks);
+        setTotal(filteredWorks.length);
+        setPages(1);
+      }
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
-      console.error('Error loading pending workers:', err);
+      console.error('Error loading pending approvals:', err);
       toast.error('فشل تحميل طلبات الاعتماد');
     } finally {
       if (requestId === requestIdRef.current) {
@@ -99,13 +135,15 @@ const TechnicianApprovalsPage = () => {
         setFetching(false);
       }
     }
-  }, [page, debouncedSearch, activeCategory]);
+  }, [page, debouncedSearch, activeCategory, activeTab, workers.length, portfolios.length]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   // ── Derived stats ──────────────────────────────────────────────────────────
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-  const urgent = workers.filter(w => w.createdAt && new Date(w.createdAt) < threeDaysAgo).length;
+  const urgent = activeTab === 'technicians'
+    ? workers.filter(w => w.createdAt && new Date(w.createdAt) < threeDaysAgo).length
+    : portfolios.filter(p => p.createdAt && new Date(p.createdAt) < threeDaysAgo).length;
 
   // ── Format worker for table/modal ──────────────────────────────────────────
   const fmt = (worker) => ({
@@ -127,7 +165,7 @@ const TechnicianApprovalsPage = () => {
     initials:       worker.name ? worker.name.substring(0, 2).toUpperCase() : 'WK',
   });
 
-  // ── Approve / Reject ───────────────────────────────────────────────────────
+  // ── Approve / Reject Technician ────────────────────────────────────────────
   const handleApprove = async (tech) => {
     try {
       setApproving(true);
@@ -147,12 +185,40 @@ const TechnicianApprovalsPage = () => {
     try {
       setApproving(true);
       await workerAPI.updateWorkerApproval(tech.id, 'rejected');
-      toast.success('تم رفض الفني');
+      toast.success('تم رفض الفني بنجاح');
       setShowModal(false);
       loadData();
       refreshAll();
     } catch {
       toast.error('فشل رفض الفني');
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleApproveWork = async (workId) => {
+    try {
+      setApproving(true);
+      await workerAPI.updateWorkApproval(workId, 'approved');
+      toast.success('تم اعتماد العمل بنجاح');
+      setShowWorkModal(false);
+      loadData();
+    } catch {
+      toast.error('فشل اعتماد العمل');
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleRejectWork = async (workId) => {
+    try {
+      setApproving(true);
+      await workerAPI.updateWorkApproval(workId, 'rejected');
+      toast.success('تم رفض العمل بنجاح');
+      setShowWorkModal(false);
+      loadData();
+    } catch {
+      toast.error('فشل رفض العمل');
     } finally {
       setApproving(false);
     }
@@ -206,6 +272,55 @@ const TechnicianApprovalsPage = () => {
     </>
   );
 
+  const renderPortfolioRow = (work) => {
+    const workerName = work.worker?.name || 'فني غير معروف';
+    const workerEmail = work.worker?.email || '';
+    const initials = workerName.substring(0, 2).toUpperCase();
+    return (
+      <>
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm shadow-sm">
+              {initials}
+            </div>
+            <div>
+              <div className="font-bold text-gray-900">{workerName}</div>
+              <div className="text-xs text-gray-500">{workerEmail}</div>
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4 text-gray-700 font-medium">{work.title}</td>
+        <td className="px-6 py-4 text-gray-500">{work.category}</td>
+        <td className="px-6 py-4 font-bold text-orange-600">{work.price} ج.م</td>
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              onClick={() => { setSelectedWork(work); setShowWorkModal(true); }}
+              className="text-orange-600 hover:text-orange-700 font-medium text-sm px-3 py-1 rounded-lg hover:bg-orange-50 transition-colors"
+            >
+              عرض التفاصيل
+            </button>
+            <button
+              onClick={() => handleApproveWork(work._id)}
+              disabled={approving}
+              className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-semibold px-3 py-1 rounded-lg transition-colors text-sm"
+            >
+              {approving ? '...' : 'اعتماد'}
+            </button>
+            <button
+              onClick={() => handleRejectWork(work._id)}
+              disabled={approving}
+              className="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white font-semibold px-3 py-1 rounded-lg transition-colors text-sm"
+            >
+              {approving ? '...' : 'رفض'}
+            </button>
+          </div>
+        </td>
+      </>
+    );
+  };
+
+  const formattedWorkers = workers.map(fmt);
   const filteredWorkers = workers.filter(worker => {
     if (!activeCategory) return true;
     const catId = worker.category?._id || worker.category;
@@ -217,11 +332,40 @@ const TechnicianApprovalsPage = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">طلبات اعتماد الفنيين</h1>
-        <p className="text-gray-600 text-sm lg:text-base">
-          {loading ? 'جاري التحميل...' : `${total.toLocaleString('en-US')} طلب معلق`}
-        </p>
+      {/* Header and Tab Switcher */}
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
+            {activeTab === 'technicians' ? 'طلبات اعتماد الفنيين' : 'طلبات اعتماد معرض الأعمال'}
+          </h1>
+          <p className="text-gray-600 text-sm lg:text-base">
+            {loading ? 'جاري التحميل...' : `${total.toLocaleString('en-US')} طلب معلق`}
+          </p>
+        </div>
+
+        {/* Tab Switcher Buttons */}
+        <div className="flex gap-6 border-b border-gray-150">
+          <button
+            onClick={() => setActiveTab('technicians')}
+            className={`pb-3 text-base lg:text-lg font-bold transition-all relative ${
+              activeTab === 'technicians'
+                ? 'text-orange-600 border-b-2 border-orange-600'
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            اعتمادات الفنيين
+          </button>
+          <button
+            onClick={() => setActiveTab('portfolios')}
+            className={`pb-3 text-base lg:text-lg font-bold transition-all relative ${
+              activeTab === 'portfolios'
+                ? 'text-orange-600 border-b-2 border-orange-600'
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            اعتمادات معرض الأعمال
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -255,7 +399,11 @@ const TechnicianApprovalsPage = () => {
           <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="بحث بالاسم أو البريد أو الهاتف..."
+            placeholder={
+              activeTab === 'technicians'
+                ? 'بحث بالاسم أو البريد أو الهاتف...'
+                : 'بحث بعنوان العمل أو اسم الفني...'
+            }
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full border border-gray-200 rounded-full py-2.5 px-5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 shadow-sm"
@@ -284,10 +432,10 @@ const TechnicianApprovalsPage = () => {
         <div className="flex justify-center items-center py-24">
           <div className="w-10 h-10 border-4 border-orange-400/30 border-t-orange-500 rounded-full animate-spin" />
         </div>
-      ) : formattedWorkers.length === 0 ? (
+      ) : (activeTab === 'technicians' ? formattedWorkers.length === 0 : portfolios.length === 0) ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
           <ClipboardDocumentListIcon className="w-14 h-14 text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">لا توجد طلبات مطابقة</p>
+          <p className="text-gray-500 font-medium">لا توجد طلبات معلقة</p>
           <p className="text-gray-400 text-sm mt-1">جرّب تغيير معايير التصفية</p>
         </div>
       ) : (
@@ -299,14 +447,22 @@ const TechnicianApprovalsPage = () => {
             </div>
           )}
 
-          <Table
-            columns={['الاسم', 'التخصص', 'الخبرة', 'الحالة', 'الإجراءات']}
-            data={formattedWorkers}
-            renderRow={renderRow}
-          />
+          {activeTab === 'technicians' ? (
+            <Table
+              columns={['الاسم', 'التخصص', 'الخبرة', 'الحالة', 'الإجراءات']}
+              data={formattedWorkers}
+              renderRow={renderRow}
+            />
+          ) : (
+            <Table
+              columns={['الفني المالك', 'عنوان العمل', 'التخصص', 'السعر', 'الإجراءات']}
+              data={portfolios}
+              renderRow={renderPortfolioRow}
+            />
+          )}
 
           {/* Pagination */}
-          {total > 0 && (
+          {total > 0 && pages > 1 && activeTab === 'technicians' && (
             <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-gray-500">
                 عرض{' '}
@@ -370,7 +526,7 @@ const TechnicianApprovalsPage = () => {
         </div>
       )}
 
-      {/* Detail Modal */}
+      {/* Technician Detail Modal */}
       {showModal && selectedTech && (
         <div className="modal-overlay">
           <div className="modal-content !max-w-2xl">
@@ -498,6 +654,108 @@ const TechnicianApprovalsPage = () => {
                 </button>
                 <button
                   onClick={() => handleApprove(selectedTech)}
+                  disabled={approving}
+                  className="flex-1 px-4 py-2.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm shadow-sm"
+                >
+                  {approving ? 'جاري...' : 'اعتماد'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Portfolio Work Detail Modal */}
+      {showWorkModal && selectedWork && (
+        <div className="modal-overlay">
+          <div className="modal-content !max-w-2xl">
+            <div className="sticky top-0 bg-slate-50 border-b border-gray-100 p-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">تفاصيل العمل السابق</h2>
+              <button
+                onClick={() => setShowWorkModal(false)}
+                className="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Work Title and Category */}
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">{selectedWork.title}</h3>
+                <div className="flex gap-2 mt-2">
+                  <Badge status="info">{selectedWork.category}</Badge>
+                  <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-orange-50 text-orange-700 border border-orange-100">
+                    السعر: {selectedWork.price} ج.م
+                  </span>
+                </div>
+              </div>
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-xs text-gray-500 mb-1">اسم العميل</p>
+                  <p className="font-bold text-gray-900">{selectedWork.clientName}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-xs text-gray-500 mb-1">المنطقة / الموقع</p>
+                  <p className="font-bold text-gray-900">{selectedWork.location}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-xs text-gray-500 mb-1">تاريخ العمل</p>
+                  <p className="font-semibold text-gray-800">
+                    {new Date(selectedWork.date).toLocaleDateString('ar-EG')}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-xs text-gray-500 mb-1">الفني المالك</p>
+                  <p className="font-semibold text-gray-800">
+                    {selectedWork.worker?.name || 'فني غير معروف'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-xs text-gray-500 mb-2">تفاصيل العمل</p>
+                <p className="text-gray-800 text-sm leading-relaxed">{selectedWork.description}</p>
+              </div>
+
+              {/* Images */}
+              {selectedWork.images && selectedWork.images.length > 0 && (
+                <div>
+                  <h4 className="font-bold text-gray-900 mb-3">صور العمل</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {selectedWork.images.map((img, i) => (
+                      <a href={img} target="_blank" rel="noopener noreferrer" key={i} className="block group overflow-hidden rounded-xl border border-gray-200">
+                        <img
+                          src={img}
+                          alt={`Work detail ${i + 1}`}
+                          className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => setShowWorkModal(false)}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold rounded-xl transition-colors text-sm"
+                >
+                  إغلاق
+                </button>
+                <button
+                  onClick={() => handleRejectWork(selectedWork._id)}
+                  disabled={approving}
+                  className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
+                >
+                  {approving ? 'جاري...' : 'رفض'}
+                </button>
+                <button
+                  onClick={() => handleApproveWork(selectedWork._id)}
                   disabled={approving}
                   className="flex-1 px-4 py-2.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm shadow-sm"
                 >

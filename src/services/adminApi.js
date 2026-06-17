@@ -16,6 +16,18 @@ export const workerAPI = {
     return response;
   },
 
+  // Get all pending works for approval
+  getPendingWorks: async (params = {}) => {
+    const response = await httpClient.get('/workers/works/pending-approval', { params });
+    return response || {};
+  },
+
+  // Approve or reject a work item
+  updateWorkApproval: async (workId, status) => {
+    const response = await httpClient.patch(`/workers/works/${workId}/approval`, { status });
+    return response;
+  },
+
   // Get all workers (with pagination/filtering) for Admin
   getAllWorkers: async (params = {}) => {
     const response = await httpClient.get('/workers/admin', { params });
