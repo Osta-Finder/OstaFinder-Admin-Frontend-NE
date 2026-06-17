@@ -168,23 +168,39 @@ const UsersPage = () => {
 
   const LIMIT = 15;
   const requestIdRef = useRef(0);
+  // ✅ FIX 1: store clientsData in a ref so it never becomes a useCallback dependency.
+  // A new object reference from context on every fetch would recreate loadData → re-run
+  // the useEffect → trigger another fetch, causing an infinite loop.
+  const clientsDataRef = useRef(clientsData);
+  // ✅ FIX 3: remember the last params key to skip duplicate fetches.
+  const prevParamsRef = useRef(null);
 
-  // Debounce search term
+  // Keep clientsDataRef in sync without adding clientsData to loadData's deps.
+  useEffect(() => {
+    clientsDataRef.current = clientsData;
+  }, [clientsData]);
+
+  // ✅ FIX 2: separate setPage and setDebouncedSearch — nested setState inside a
+  // state-updater function causes an extra render cycle, effectively firing loadData twice.
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(prev => {
-        if (prev !== searchTerm) {
-          setPage(1);
-          return searchTerm;
-        }
-        return prev;
-      });
-    }, 500);
+      if (debouncedSearch !== searchTerm) {
+        setPage(1);
+        setDebouncedSearch(searchTerm);
+      }
+    }, 1500);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]); // intentionally omit debouncedSearch to avoid loop
 
   // ── Fetch users or workers depending on the active tab ──
   const loadData = useCallback(async () => {
+    // ✅ FIX 3: skip fetch if params haven't changed (prevents double-fire from
+    // simultaneous setPage(1) + setDebouncedSearch updates).
+    const paramsKey = `${activeTab}-${page}-${debouncedSearch}`;
+    if (prevParamsRef.current === paramsKey) return;
+    prevParamsRef.current = paramsKey;
+
     const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
@@ -196,19 +212,20 @@ const UsersPage = () => {
         
         if (requestId !== requestIdRef.current) return; // Cancelled by newer request
 
-        // httpClient interceptor returns response.data => { success, data, total, pages, page, limit }
         setUsers(res.data || []);
         setTotal(res.total || 0);
         setPages(res.pages || 1);
       } else {
         const roleMap = { clients: 'client', admins: 'admin' };
         
-        // Use cached global data for initial clients view to avoid duplicate network request
-        if (activeTab === 'clients' && page === 1 && !debouncedSearch.trim() && clientsData?.data?.length > 0) {
+        // ✅ FIX 1: use ref instead of clientsData directly — avoids adding clientsData
+        // to useCallback deps which would re-create loadData on every context re-fetch.
+        const cachedClients = clientsDataRef.current;
+        if (activeTab === 'clients' && page === 1 && !debouncedSearch.trim() && cachedClients?.data?.length > 0) {
           if (requestId !== requestIdRef.current) return;
-          setUsers(clientsData.data);
-          setTotal(clientsData.total);
-          setPages(clientsData.pages || Math.ceil(clientsData.total / LIMIT) || 1);
+          setUsers(cachedClients.data);
+          setTotal(cachedClients.total);
+          setPages(cachedClients.pages || Math.ceil(cachedClients.total / LIMIT) || 1);
           setLoading(false);
           return;
         }
@@ -219,7 +236,6 @@ const UsersPage = () => {
         
         if (requestId !== requestIdRef.current) return; // Cancelled by newer request
         
-        // res from httpClient interceptor = { success, total, page, pages, data: [...] }
         setUsers(res.data || []);
         setTotal(res.total || 0);
         setPages(res.pages || 1);
@@ -234,7 +250,8 @@ const UsersPage = () => {
         setLoading(false);
       }
     }
-  }, [page, debouncedSearch, activeTab, clientsData]);
+  // ✅ FIX 1: clientsData removed from deps — we read it via clientsDataRef instead.
+  }, [page, debouncedSearch, activeTab]);
 
   useEffect(() => {
     loadData();
@@ -249,7 +266,6 @@ const UsersPage = () => {
       toast.info('إدارة حسابات الفنيين تتم من صفحة اعتماد الفنيين');
       return;
     }
-    if (!confirm(`هل أنت متأكد من حذف المستخدم "${userName}"؟`)) return;
     try {
       setDeletingId(userId);
       await userAPI.deleteUser(userId);

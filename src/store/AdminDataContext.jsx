@@ -55,7 +55,7 @@ export const AdminDataProvider = ({ children }) => {
         clientsRes
       ] = await Promise.all([
         workerAPI.getPendingWorkers({ limit: 1 }), // Only need total count for badge
-        requestAPI.getAllRequests(),
+        requestAPI.getAllRequests({ limit: 100 }), // جلب بيانات كافية للـ Dashboard والـ charts
         requestAPI.getRequestStats(),
         workerAPI.getAllWorkers({ limit: 1 }),
         categoryAPI.getCategories(),

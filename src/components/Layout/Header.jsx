@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BellIcon, Cog6ToothIcon, MagnifyingGlassIcon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline';
+import { BellIcon, Cog6ToothIcon, MagnifyingGlassIcon, XMarkIcon, UserIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import { useAdminData } from '../../store/AdminDataContext';
 
-const Header = () => {
+const Header = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const headerRef = useRef(null);
   const { pendingWorkers, orders } = useAdminData(); // ← from shared context, no extra fetch
@@ -173,14 +173,17 @@ const Header = () => {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-lg flex items-center justify-between px-8 shadow-sm border-b border-gray-100/50 transition-all duration-300">
-      <div className="flex items-center gap-4">
-        <h2 className="text-xl font-bold text-[#D97706] leading-tight">Osta Finder</h2>
+    <header ref={headerRef} className="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-lg flex items-center justify-between px-4 md:px-8 shadow-sm border-b border-gray-100/50 transition-all duration-300">
+      <div className="flex items-center gap-3">
+        <button className="md:hidden p-2 text-gray-500 hover:text-orange-500 transition-colors" onClick={onMenuClick}>
+          <Bars3Icon className="w-6 h-6" />
+        </button>
+        <h2 className="text-xl font-bold text-[#D97706] leading-tight hidden sm:block">Osta Finder</h2>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-3 md:gap-6">
         {/* Search */}
-        <div className="relative w-96">
+        <div className="relative w-40 sm:w-64 md:w-96">
           <input
             type="text"
             value={searchQuery}

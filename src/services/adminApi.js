@@ -245,6 +245,27 @@ export const uploadAPI = {
   },
 };
 
+// ============ CONTACT APIs ============
+
+export const contactAPI = {
+  getAllContacts: async (params = {}) => {
+    const response = await httpClient.get('/contacts', { params });
+    return response;
+  },
+  getContactById: async (id) => {
+    const response = await httpClient.get(`/contacts/${id}`);
+    return response.data;
+  },
+  deleteContact: async (id) => {
+    const response = await httpClient.delete(`/contacts/${id}`);
+    return response;
+  },
+  markAsRead: async (id) => {
+    const response = await httpClient.patch(`/contacts/${id}/read`);
+    return response.data;
+  },
+};
+
 export default {
   worker: workerAPI,
   request: requestAPI,
@@ -254,4 +275,5 @@ export default {
   user: userAPI,
   order: orderAPI,
   upload: uploadAPI,
+  contact: contactAPI,
 };

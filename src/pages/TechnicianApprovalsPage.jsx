@@ -53,6 +53,8 @@ const TechnicianApprovalsPage = () => {
   const [approving, setApproving]       = useState(false);
 
   const requestIdRef = useRef(0);
+  // ✅ FIX 3: dedup guard — skip fetch if params haven't actually changed.
+  const prevParamsRef = useRef(null);
 
   // ── Reset filters on activeTab change ──────────────────────────────────────
   useEffect(() => {
@@ -65,19 +67,23 @@ const TechnicianApprovalsPage = () => {
   // ── Debounce search ────────────────────────────────────────────────────────
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(prev => {
-        if (prev !== searchTerm) { setPage(1); return searchTerm; }
-        return prev;
-      });
-    }, 500);
+      if (debouncedSearch !== searchTerm) {
+        setPage(1);
+        setDebouncedSearch(searchTerm);
+      }
+    }, 1500);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]); // intentionally omit debouncedSearch to avoid loop
 
-  // ── Reset page on filter change ────────────────────────────────────────────
-  useEffect(() => { setPage(1); }, [activeCategory]);
-
-  // ── Fetch from Backend ─────────────────────────────────────────────────────
+  // ── Fetch from Backend ───────────────────────────────────────────────
   const loadData = useCallback(async () => {
+    // ✅ FIX 3: skip fetch if params haven't changed (prevents double-fire when
+    // setPage(1) + setDebouncedSearch both update in the same 500 ms window).
+    const paramsKey = `${page}-${debouncedSearch}-${activeCategory}`;
+    if (prevParamsRef.current === paramsKey) return;
+    prevParamsRef.current = paramsKey;
+
     const requestId = ++requestIdRef.current;
     const isFirstLoad = activeTab === 'technicians' ? workers.length === 0 : portfolios.length === 0;
     try {
@@ -315,6 +321,13 @@ const TechnicianApprovalsPage = () => {
   };
 
   const formattedWorkers = workers.map(fmt);
+  const filteredWorkers = workers.filter(worker => {
+    if (!activeCategory) return true;
+    const catId = worker.category?._id || worker.category;
+    return catId === activeCategory;
+  });
+
+  const formattedWorkers = filteredWorkers.map(fmt);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -400,12 +413,15 @@ const TechnicianApprovalsPage = () => {
           <AdjustmentsHorizontalIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
           <select
             value={activeCategory}
-            onChange={e => setActiveCategory(e.target.value)}
+            onChange={e => {
+              setActiveCategory(e.target.value);
+              setPage(1);
+            }}
             className="border border-gray-200 rounded-full px-5 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 shadow-sm cursor-pointer appearance-none"
           >
             <option value="">كل التخصصات</option>
             {categories.map(cat => (
-              <option key={cat._id} value={cat.name}>{cat.name}</option>
+              <option key={cat._id} value={cat._id}>{cat.name}</option>
             ))}
           </select>
         </div>

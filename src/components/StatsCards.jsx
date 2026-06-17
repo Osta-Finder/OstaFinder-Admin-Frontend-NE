@@ -13,7 +13,7 @@ const formatEGP = (value) =>
 
 const StatsCards = () => {
   // Use shared context — no independent API call from this component
-  const { orders, pendingWorkers, requestStats, loading } = useAdminData();
+  const { orders, pendingWorkers, pendingCount, requestStats, loading } = useAdminData();
 
   const totalRequests    = requestStats?.الكل       || orders.length || 0;
   const completedRequests = requestStats?.مكتملة    || 0;
@@ -56,7 +56,7 @@ const StatsCards = () => {
     },
     {
       label:       'عدد الفنيين',
-      value:       pendingWorkers.length.toLocaleString('en-US'),
+      value:       pendingCount.toLocaleString('en-US'),
       change:      'بانتظار الاعتماد',
       icon:        <UserGroupIcon className="w-7 h-7" />,
       bgColor:     'bg-orange-50',
