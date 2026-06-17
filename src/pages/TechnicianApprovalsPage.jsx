@@ -327,7 +327,6 @@ const TechnicianApprovalsPage = () => {
     return catId === activeCategory;
   });
 
-  const formattedWorkers = filteredWorkers.map(fmt);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
